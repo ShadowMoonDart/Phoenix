@@ -6,7 +6,7 @@
   <title>飛鏢隊伍管理系統</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen pb-16">
+<body class="bg-slate-900 text-slate-100 min-h-screen pb-20">
 
   <!-- 頂部導航 -->
   <header class="bg-slate-800 p-4 sticky top-0 z-40 border-b border-slate-700 flex justify-between items-center shadow-lg">
@@ -16,16 +16,22 @@
 
   <!-- 標籤導航欄 -->
   <nav class="flex justify-around bg-slate-800 border-b border-slate-700 text-xs font-semibold sticky top-14 z-30">
-    <button onclick="switchTab('matches')" id="btn-matches" class="tab-btn p-3 border-b-2 border-rose-500 text-rose-500">賽事簽到</button>
+    <button onclick="switchTab('matches')" id="btn-matches" class="tab-btn p-3 border-b-2 border-rose-500 text-rose-500 font-bold">賽事簽到</button>
     <button onclick="switchTab('stats')" id="btn-stats" class="tab-btn p-3 border-b-2 border-transparent">出席率</button>
-    <button onclick="switchTab('admin')" id="adminTabBtn" class="tab-btn p-3 border-b-2 border-transparent hidden text-yellow-400">隊長管理</button>
+    <button onclick="switchTab('admin')" id="btn-admin" class="tab-btn p-3 border-b-2 border-transparent hidden text-yellow-400">隊長管理</button>
   </nav>
+
+  <!-- 浮動除錯狀態欄 (若有連線問題會在此顯示，不再默默卡死) -->
+  <div id="debugBar" class="hidden bg-rose-900/80 border-b border-rose-500 px-4 py-2 text-xs text-rose-200 flex justify-between items-center">
+    <span id="debugMsg"></span>
+    <button onclick="document.getElementById('debugBar').classList.add('hidden')" class="font-bold ml-2">✕</button>
+  </div>
 
   <div class="p-4 max-w-lg mx-auto">
 
-    <!-- 登入面板 -->
+    <!-- 登入 / 註冊面板 -->
     <section id="authSection" class="bg-slate-800 p-5 rounded-2xl border border-slate-700 my-4 shadow-lg">
-      <h2 class="text-base font-bold mb-3" id="authTitle">隊員登入</h2>
+      <h2 class="text-base font-bold mb-3 text-white" id="authTitle">隊員登入</h2>
       <div class="space-y-3">
         <input type="email" id="email" placeholder="電郵" class="w-full p-2.5 rounded bg-slate-700 text-xs border border-slate-600 focus:outline-none">
         <input type="password" id="password" placeholder="密碼" class="w-full p-2.5 rounded bg-slate-700 text-xs border border-slate-600 focus:outline-none">
@@ -33,10 +39,10 @@
           <input type="text" id="regName" placeholder="隊員姓名 / 鏢名" class="w-full p-2.5 rounded bg-slate-700 text-xs border border-slate-600">
           <input type="number" step="0.01" id="regRating" placeholder="Rating (鏢力)" class="w-full p-2.5 rounded bg-slate-700 text-xs border border-slate-600">
         </div>
-        <button onclick="handleAuthAction()" id="authSubmitBtn" class="w-full bg-rose-600 hover:bg-rose-500 font-bold p-2.5 rounded text-xs transition">登入</button>
+        <button onclick="handleAuthAction()" id="authSubmitBtn" class="w-full bg-rose-600 hover:bg-rose-500 font-bold p-2.5 rounded text-xs transition cursor-pointer">登入</button>
         <p class="text-center text-xs text-slate-400">
           <span id="authToggleText">仲未有帳號？</span>
-          <a href="#" onclick="toggleAuthMode()" id="authToggleLink" class="text-rose-400 underline ml-1">按此註冊</a>
+          <button type="button" onclick="toggleAuthMode()" id="authToggleLink" class="text-rose-400 underline ml-1 cursor-pointer">按此註冊</button>
         </p>
       </div>
     </section>
@@ -46,14 +52,14 @@
       <div class="flex justify-between items-center">
         <div>
           <h2 class="text-sm font-bold text-slate-200">隊伍本季賽程</h2>
-          <p id="currentTeamBadge" class="text-[11px] text-slate-400">未設定組別</p>
+          <p id="currentTeamBadge" class="text-[11px] text-slate-400">讀取中...</p>
         </div>
-        <button onclick="loadMatches()" id="syncBtn" class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 shadow">
-          <span>🔄 重新整理</span>
+        <button onclick="loadMatches()" id="syncBtn" class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-3 py-1.5 rounded-lg shadow cursor-pointer">
+          🔄 重新整理
         </button>
       </div>
       <div id="matchesContainer" class="space-y-3">
-        <p class="text-xs text-slate-400 text-center py-4">正在取得賽程...</p>
+        <p class="text-xs text-slate-400 text-center py-4">正在載入賽事資料...</p>
       </div>
     </section>
 
@@ -70,7 +76,7 @@
       </div>
     </section>
 
-    <!-- 3. 隊長管理分頁 (Scroll-down menu 聯動選單) -->
+    <!-- 3. 隊長管理分頁 -->
     <section id="tab-admin" class="hidden space-y-4">
       <h2 class="text-sm font-bold text-yellow-400">隊長專屬後台</h2>
 
@@ -85,7 +91,7 @@
           <label class="text-slate-400 block mb-1 text-[11px]">貼上官網網址 (或填 cpttnId)</label>
           <div class="flex gap-1.5">
             <input type="text" id="cfgUrlInput" value="https://play.phoenixdarts.com/selectMatchDetailML.do?cpttnId=97460&searchDivision=94563" class="w-full p-2 rounded bg-slate-700 border border-slate-600 text-xs">
-            <button onclick="fetchDropdownData()" id="fetchMenuBtn" class="bg-blue-600 hover:bg-blue-500 px-3 rounded font-bold text-xs whitespace-nowrap">🔍 讀取選單</button>
+            <button type="button" onclick="fetchDropdownData()" id="fetchMenuBtn" class="bg-blue-600 hover:bg-blue-500 px-3 rounded font-bold text-xs whitespace-nowrap cursor-pointer">🔍 讀取選單</button>
           </div>
         </div>
 
@@ -103,8 +109,8 @@
           </select>
         </div>
 
-        <button onclick="applyAndSyncSchedule()" id="applyBtn" class="w-full bg-emerald-600 hover:bg-emerald-500 font-bold p-2.5 rounded text-xs transition shadow flex justify-center items-center gap-1.5">
-          <span>🔄 確認並同步該組賽程 (9場制)</span>
+        <button type="button" onclick="applyAndSyncSchedule()" id="applyBtn" class="w-full bg-emerald-600 hover:bg-emerald-500 font-bold p-2.5 rounded text-xs transition shadow cursor-pointer">
+          🔄 確認並同步該組賽程 (9場制)
         </button>
       </div>
 
@@ -117,7 +123,7 @@
 
   </div>
 
-  <!-- Modal 1：查看 9 場陣容 -->
+  <!-- Modal 1：查看 9 場排陣或出席狀況 -->
   <div id="detailModal" class="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 hidden">
     <div class="bg-slate-800 rounded-2xl max-w-lg w-full max-h-[85vh] flex flex-col border border-slate-700 shadow-2xl">
       <div class="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-900/40">
@@ -125,7 +131,7 @@
           <h3 id="modalMatchTitle" class="text-sm font-bold text-white"></h3>
           <p id="modalMatchSubtitle" class="text-[11px] text-slate-400"></p>
         </div>
-        <button onclick="closeModal('detailModal')" class="text-slate-400 hover:text-white text-lg font-bold">&times;</button>
+        <button onclick="closeModal('detailModal')" class="text-slate-400 hover:text-white text-lg font-bold cursor-pointer">&times;</button>
       </div>
       <div class="p-4 overflow-y-auto space-y-4 text-xs">
         <div>
@@ -148,27 +154,45 @@
           <h3 class="text-sm font-bold text-yellow-400">🎯 隊長 9 場排陣系統</h3>
           <p class="text-[11px] text-slate-300">只允許安排【已簽到出席 / 遲到】之隊友</p>
         </div>
-        <button onclick="closeModal('lineupModal')" class="text-slate-400 hover:text-white text-lg font-bold">&times;</button>
+        <button onclick="closeModal('lineupModal')" class="text-slate-400 hover:text-white text-lg font-bold cursor-pointer">&times;</button>
       </div>
       <div class="p-4 overflow-y-auto space-y-3.5 text-xs" id="lineupLegsContainer"></div>
       <div class="p-4 border-t border-slate-700 bg-slate-800">
-        <button onclick="submitLineup()" class="w-full bg-yellow-500 hover:bg-yellow-400 text-slate-900 font-bold p-2.5 rounded text-xs transition">儲存並公開 9 場陣容</button>
+        <button onclick="submitLineup()" class="w-full bg-yellow-500 hover:bg-yellow-400 text-slate-900 font-bold p-2.5 rounded text-xs transition cursor-pointer">儲存並公開 9 場陣容</button>
       </div>
     </div>
   </div>
 
   <script>
+    // ⚠️ 你的 Apps Script 網址
     const API_URL = "https://script.google.com/macros/s/AKfycbyqU3xJzzh9HpIwb1zXBDWmvNkzzsmaPYrJYx6fv0ezms8YUJU966obQjkkGV3nBwRctg/exec";
 
+    // 安全讀取 currentUser
     let currentUser = null;
-    try { currentUser = JSON.parse(localStorage.getItem('dart_user')) || null; } catch(e) {}
+    try {
+      const saved = localStorage.getItem('dart_user');
+      if (saved) currentUser = JSON.parse(saved);
+    } catch(e) {
+      console.warn("User storage parse error, cleared.");
+      localStorage.removeItem('dart_user');
+    }
+
     let isRegisterMode = false;
     let currentLineupMatchId = null;
     let currentAvailablePlayers = [];
     let currentLegFormat = [];
     let currentSettings = { cpttnId: "97460", divisionId: "94563", teamName: "" };
 
-    // 封裝超時保護 (8 秒自動終止，絕不卡死)
+    function showDebug(msg) {
+      const bar = document.getElementById('debugBar');
+      const text = document.getElementById('debugMsg');
+      if (bar && text) {
+        text.innerText = "系統提示: " + msg;
+        bar.classList.remove('hidden');
+      }
+    }
+
+    // 防卡死 API 封裝 (8 秒超時保護)
     async function apiRequest(method, payload = {}) {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 8000);
@@ -187,83 +211,113 @@
           });
         }
         clearTimeout(timeoutId);
-        return await res.json();
+        const data = await res.json();
+        return data;
       } catch (err) {
         clearTimeout(timeoutId);
-        return { success: false, error: err.name === 'AbortError' ? '連線逾時（伺服器回應過慢）' : err.toString() };
+        const errMsg = err.name === 'AbortError' ? '連線逾時，後端響應過慢' : err.toString();
+        showDebug(errMsg);
+        return { success: false, error: errMsg };
       }
     }
 
-    window.onload = () => {
-      checkAuthState();
-      loadMatches();
-    };
+    // 初始化頁面
+    window.addEventListener('DOMContentLoaded', () => {
+      try {
+        checkAuthState();
+        loadMatches();
+      } catch(err) {
+        showDebug("初始化出錯: " + err.message);
+      }
+    });
 
     function checkAuthState() {
+      const authSec = document.getElementById('authSection');
+      const userInfo = document.getElementById('userInfo');
+      const adminBtn = document.getElementById('btn-admin');
+
       if (currentUser) {
-        document.getElementById('authSection').classList.add('hidden');
-        document.getElementById('userInfo').innerHTML = `
-          <span>${currentUser.name} (${currentUser.role === 'admin' ? '<b class="text-yellow-400">隊長</b>' : '隊員'})</span>
-          <button onclick="logout()" class="ml-2 text-rose-400 underline">登出</button>
-        `;
-        if (currentUser.role === 'admin') {
-          document.getElementById('adminTabBtn').classList.remove('hidden');
+        if (authSec) authSec.classList.add('hidden');
+        if (userInfo) {
+          userInfo.innerHTML = `
+            <span>${currentUser.name} (${currentUser.role === 'admin' ? '<b class="text-yellow-400">隊長</b>' : '隊員'})</span>
+            <button onclick="logout()" class="ml-2 text-rose-400 underline cursor-pointer">登出</button>
+          `;
+        }
+        if (currentUser.role === 'admin' && adminBtn) {
+          adminBtn.classList.remove('hidden');
           loadAdminData();
         }
       } else {
-        document.getElementById('authSection').classList.remove('hidden');
-        document.getElementById('userInfo').innerText = '尚未登入';
-        document.getElementById('adminTabBtn').classList.add('hidden');
+        if (authSec) authSec.classList.remove('hidden');
+        if (userInfo) userInfo.innerText = '尚未登入';
+        if (adminBtn) adminBtn.classList.add('hidden');
       }
     }
 
+    // 穩健切換 Tab
     function switchTab(tabId) {
       ['matches', 'stats', 'admin'].forEach(t => {
         const el = document.getElementById(`tab-${t}`);
-        const btn = document.getElementById(`btn-${t}`) || document.getElementById('adminTabBtn');
+        const btn = document.getElementById(`btn-${t}`);
         if (el) el.classList.add('hidden');
         if (btn) {
-          btn.classList.remove('border-rose-500', 'text-rose-500');
+          btn.classList.remove('border-rose-500', 'text-rose-500', 'font-bold');
           btn.classList.add('border-transparent');
         }
       });
-      document.getElementById(`tab-${tabId}`).classList.remove('hidden');
-      const activeBtn = document.getElementById(`btn-${tabId}`) || document.getElementById('adminTabBtn');
-      if (activeBtn) {
-        activeBtn.classList.add('border-rose-500', 'text-rose-500');
-        activeBtn.classList.remove('border-transparent');
+
+      const targetEl = document.getElementById(`tab-${tabId}`);
+      const targetBtn = document.getElementById(`btn-${tabId}`);
+      if (targetEl) targetEl.classList.remove('hidden');
+      if (targetBtn) {
+        targetBtn.classList.add('border-rose-500', 'text-rose-500', 'font-bold');
+        targetBtn.classList.remove('border-transparent');
       }
+
       if (tabId === 'stats') loadStats();
+      if (tabId === 'admin') fetchDropdownData();
     }
 
     function toggleAuthMode() {
       isRegisterMode = !isRegisterMode;
       document.getElementById('authTitle').innerText = isRegisterMode ? '隊員註冊' : '隊員登入';
       document.getElementById('authSubmitBtn').innerText = isRegisterMode ? '提交註冊' : '登入';
+      document.getElementById('authToggleText').innerText = isRegisterMode ? '已有帳號？' : '仲未有帳號？';
+      document.getElementById('authToggleLink').innerText = isRegisterMode ? '按此登入' : '按此註冊';
       document.getElementById('registerFields').classList.toggle('hidden', !isRegisterMode);
     }
 
+    // 處理登入與註冊
     async function handleAuthAction() {
       const email = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value.trim();
       if (!email || !password) return alert('請輸入電郵及密碼');
 
+      const submitBtn = document.getElementById('authSubmitBtn');
+      submitBtn.innerText = '處理中...';
+
       if (isRegisterMode) {
         const name = document.getElementById('regName').value.trim();
         const rating = document.getElementById('regRating').value.trim();
-        if (!name) return alert('請輸入姓名');
+        if (!name) {
+          submitBtn.innerText = '提交註冊';
+          return alert('請輸入姓名');
+        }
         const res = await apiRequest('POST', { action: 'register', email, password, name, rating });
+        submitBtn.innerText = '提交註冊';
         alert(res.message || '註冊已送出');
         if (res.success) toggleAuthMode();
       } else {
         const res = await apiRequest('POST', { action: 'login', email, password });
-        if (res.success) {
+        submitBtn.innerText = '登入';
+        if (res.success && res.user) {
           currentUser = res.user;
           localStorage.setItem('dart_user', JSON.stringify(currentUser));
           checkAuthState();
           loadMatches();
         } else {
-          alert(res.message || '登入失敗');
+          alert(res.message || '登入失敗，請確認電郵密碼');
         }
       }
     }
@@ -279,30 +333,29 @@
     async function loadMatches() {
       const container = document.getElementById('matchesContainer');
       const badge = document.getElementById('currentTeamBadge');
-      container.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">讀取中...</p>';
+      if (container) container.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">讀取中...</p>';
 
-      // 並行取得賽程與設定
-      const [json, setRes] = await Promise.all([
-        apiRequest('GET', { action: 'getMatches' }),
-        apiRequest('GET', { action: 'getSettings' })
-      ]);
+      const json = await apiRequest('GET', { action: 'getMatches' });
+      const setRes = await apiRequest('GET', { action: 'getSettings' });
 
       if (setRes.success && setRes.settings) {
         currentSettings = setRes.settings;
-        badge.innerText = `我隊：${setRes.settings.teamName || '全組賽程'} | 組別：${setRes.settings.divisionId}`;
-      } else {
-        badge.innerText = '組別：' + currentSettings.divisionId;
+        if (badge) badge.innerText = `我隊：${setRes.settings.teamName || '全組賽程'} | 組別：${setRes.settings.divisionId}`;
+      } else if (badge) {
+        badge.innerText = `組別：${currentSettings.divisionId}`;
       }
 
       if (!json.success || !json.matches || json.matches.length === 0) {
-        container.innerHTML = `
-          <div class="text-center py-8 bg-slate-800 rounded-xl border border-slate-700">
-            <p class="text-slate-400 text-xs mb-3">目前內部尚無賽事紀錄</p>
-            ${currentUser && currentUser.role === 'admin' ? `
-              <button onclick="switchTab('admin')" class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded font-bold">前往後台同步 Phoenix 賽程</button>
-            ` : '<p class="text-[11px] text-slate-500">請等待隊長在後台同步最新賽程</p>'}
-          </div>
-        `;
+        if (container) {
+          container.innerHTML = `
+            <div class="text-center py-8 bg-slate-800 rounded-xl border border-slate-700">
+              <p class="text-slate-400 text-xs mb-3">目前內部尚無賽事紀錄</p>
+              ${currentUser && currentUser.role === 'admin' ? `
+                <button onclick="switchTab('admin')" class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded font-bold cursor-pointer">前往後台同步 Phoenix 賽程</button>
+              ` : '<p class="text-[11px] text-slate-500">請等待隊長在後台同步最新賽程</p>'}
+            </div>
+          `;
+        }
         return;
       }
 
@@ -328,23 +381,23 @@
             <p class="text-xs text-slate-300">📍 地點: ${m.venue || '官方場地'}</p>
 
             <div class="flex items-center gap-3 bg-slate-900/60 p-2 rounded-lg text-[11px]">
-              <span class="text-emerald-400 font-semibold">出席: ${m.counts.attending}</span>
-              <span class="text-amber-400 font-semibold">遲到: ${m.counts.late}</span>
-              <span class="text-rose-400 font-semibold">缺席: ${m.counts.absent}</span>
-              <button onclick="viewMatchDetails('${m.id}', '${m.opponent}', '${m.venue}', '${m.score || ''}')" class="ml-auto text-rose-400 hover:text-rose-300 underline font-medium">
+              <span class="text-emerald-400 font-semibold">出席: ${m.counts ? m.counts.attending : 0}</span>
+              <span class="text-amber-400 font-semibold">遲到: ${m.counts ? m.counts.late : 0}</span>
+              <span class="text-rose-400 font-semibold">缺席: ${m.counts ? m.counts.absent : 0}</span>
+              <button onclick="viewMatchDetails('${m.id}', '${m.opponent}', '${m.venue}', '${m.score || ''}')" class="ml-auto text-rose-400 hover:text-rose-300 underline font-medium cursor-pointer">
                 查看簽到/排陣 ↗
               </button>
             </div>
 
             ${!isFinished ? `
               <div class="grid grid-cols-3 gap-2 pt-1 border-t border-slate-700/60">
-                <button onclick="submitAttendance('${m.id}', 'attending')" class="bg-emerald-600 hover:bg-emerald-500 py-1.5 rounded text-xs font-semibold">出席 👍</button>
-                <button onclick="submitAttendance('${m.id}', 'late')" class="bg-amber-600 hover:bg-amber-500 py-1.5 rounded text-xs font-semibold">遲到 ⏰</button>
-                <button onclick="submitAttendance('${m.id}', 'absent')" class="bg-rose-600 hover:bg-rose-500 py-1.5 rounded text-xs font-semibold">缺席 ❌</button>
+                <button onclick="submitAttendance('${m.id}', 'attending')" class="bg-emerald-600 hover:bg-emerald-500 py-1.5 rounded text-xs font-semibold cursor-pointer">出席 👍</button>
+                <button onclick="submitAttendance('${m.id}', 'late')" class="bg-amber-600 hover:bg-amber-500 py-1.5 rounded text-xs font-semibold cursor-pointer">遲到 ⏰</button>
+                <button onclick="submitAttendance('${m.id}', 'absent')" class="bg-rose-600 hover:bg-rose-500 py-1.5 rounded text-xs font-semibold cursor-pointer">缺席 ❌</button>
               </div>
               ${isAdmin ? `
                 <div class="pt-1">
-                  <button onclick="openLineupModal('${m.id}', '${m.opponent}')" class="w-full bg-yellow-500 hover:bg-yellow-400 text-slate-900 font-bold py-1.5 rounded text-xs">🎯 隊長 9 場排陣 (限出席隊友)</button>
+                  <button onclick="openLineupModal('${m.id}', '${m.opponent}')" class="w-full bg-yellow-500 hover:bg-yellow-400 text-slate-900 font-bold py-1.5 rounded text-xs cursor-pointer">🎯 隊長 9 場排陣 (限出席隊友)</button>
                 </div>
               ` : ''}
             ` : ''}
@@ -353,4 +406,237 @@
       }).join('');
     }
 
-    async function submitAttendance(matchId, st
+    async function submitAttendance(matchId, status) {
+      if (!currentUser) return alert('請先登入！');
+      const res = await apiRequest('POST', { action: 'checkIn', matchId, userId: currentUser.id, status });
+      alert(res.message || '已送出！');
+      loadMatches();
+    }
+
+    // 隊長讀取組別與隊伍選單
+    async function fetchDropdownData() {
+      const inputVal = document.getElementById('cfgUrlInput').value.trim();
+      const cpttnMatch = inputVal.match(/cpttnId=(\d+)/i);
+      const divMatch = inputVal.match(/searchDivision=(\d+)/i);
+
+      const cpttnId = cpttnMatch ? cpttnMatch[1] : (inputVal.match(/^\d+$/) ? inputVal : currentSettings.cpttnId);
+      const divisionId = divMatch ? divMatch[1] : currentSettings.divisionId;
+
+      const btn = document.getElementById('fetchMenuBtn');
+      if (btn) btn.innerText = '讀取中...';
+
+      const res = await apiRequest('GET', { action: 'getLeagueStructure', cpttnId, divisionId });
+      if (btn) btn.innerText = '🔍 讀取選單';
+
+      if (res.success) {
+        currentSettings.cpttnId = res.cpttnId;
+        currentSettings.divisionId = res.currentDivisionId;
+
+        const divSelect = document.getElementById('divisionDropdown');
+        if (divSelect) {
+          if (res.divisions && res.divisions.length > 0) {
+            divSelect.innerHTML = res.divisions.map(d => `
+              <option value="${d.id}" ${String(d.id) === String(res.currentDivisionId) ? 'selected' : ''}>
+                ${d.name} (${d.id})
+              </option>
+            `).join('');
+          } else {
+            divSelect.innerHTML = `<option value="${res.currentDivisionId}">組別 (${res.currentDivisionId})</option>`;
+          }
+        }
+        renderTeamDropdown(res.teams || []);
+      }
+    }
+
+    function renderTeamDropdown(teams) {
+      const teamSelect = document.getElementById('teamDropdown');
+      if (!teamSelect) return;
+      if (teams.length === 0) {
+        teamSelect.innerHTML = '<option value="all">[同步全組所有比賽]</option>';
+      } else {
+        teamSelect.innerHTML = `
+          <option value="">-- 請選擇你隊 --</option>
+          ${teams.map(t => `<option value="${t}">${t}</option>`).join('')}
+          <option value="all">[同步全組所有賽事]</option>
+        `;
+      }
+    }
+
+    async function onDivisionChange() {
+      const divId = document.getElementById('divisionDropdown').value;
+      if (!divId) return;
+      currentSettings.divisionId = divId;
+      const res = await apiRequest('GET', { action: 'getLeagueStructure', cpttnId: currentSettings.cpttnId, divisionId: divId });
+      if (res.success) renderTeamDropdown(res.teams || []);
+    }
+
+    async function applyAndSyncSchedule() {
+      const divisionId = document.getElementById('divisionDropdown').value;
+      const teamName = document.getElementById('teamDropdown').value;
+      const cpttnId = currentSettings.cpttnId;
+
+      const applyBtn = document.getElementById('applyBtn');
+      if (applyBtn) applyBtn.innerText = '正在同步中...';
+
+      await apiRequest('POST', { action: 'saveSettings', cpttnId, divisionId, teamName });
+      const res = await apiRequest('GET', { action: 'syncMatches', cpttnId, divisionId, teamName });
+      if (applyBtn) applyBtn.innerText = '🔄 確認並同步該組賽程 (9場制)';
+
+      alert(res.message || '賽程已同步！');
+      loadMatches();
+      switchTab('matches');
+    }
+
+    async function viewMatchDetails(matchId, opponent, venue, score) {
+      document.getElementById('modalMatchTitle').innerText = `VS ${opponent}`;
+      document.getElementById('modalMatchSubtitle').innerText = `${venue ? '地點: ' + venue : ''} ${score ? ' | 比分: ' + score : ''}`;
+      document.getElementById('modalAttList').innerHTML = '載入中...';
+      document.getElementById('modalLineupList').innerHTML = '讀取 9 場陣容中...';
+      document.getElementById('detailModal').classList.remove('hidden');
+
+      const res = await apiRequest('GET', { action: 'getMatchDetails', matchId });
+      if (!res.success) return;
+
+      const captainLineup = res.captainLineup || [];
+      const legFormat = res.legFormat || [];
+      const atts = res.attendanceList || [];
+
+      if (captainLineup.length === 0) {
+        document.getElementById('modalLineupList').innerHTML = '<p class="text-slate-400 text-center py-2">隊長尚未提交 9 場出賽排陣。</p>';
+      } else {
+        document.getElementById('modalLineupList').innerHTML = legFormat.map((leg, idx) => {
+          const playerIds = captainLineup[idx] || [];
+          const names = playerIds.map(pid => {
+            const p = atts.find(u => String(u.userId) === String(pid));
+            return p ? `${p.name} (Rt.${p.rating})` : '未指定';
+          }).join('、');
+          return `
+            <div class="border-b border-slate-700/50 pb-1.5 last:border-0 flex justify-between items-center">
+              <span class="text-yellow-400 font-semibold">${leg.name}</span>
+              <span class="text-slate-200">${names || '<span class="text-slate-500">未排</span>'}</span>
+            </div>
+          `;
+        }).join('');
+      }
+
+      if (atts.length === 0) {
+        document.getElementById('modalAttList').innerHTML = '<p class="text-slate-400">目前尚無隊友簽到。</p>';
+      } else {
+        document.getElementById('modalAttList').innerHTML = atts.map(a => {
+          let b = a.status === 'attending' ? '<span class="text-emerald-400 font-bold">出席</span>' :
+                 (a.status === 'late' ? '<span class="text-amber-400 font-bold">遲到</span>' : '<span class="text-rose-400">缺席</span>');
+          return `
+            <div class="flex justify-between items-center bg-slate-700/40 p-2 rounded">
+              <span><b>${a.name}</b> (Rt. ${a.rating || 0})</span>
+              ${b}
+            </div>
+          `;
+        }).join('');
+      }
+    }
+
+    async function openLineupModal(matchId, opponent) {
+      currentLineupMatchId = matchId;
+      const container = document.getElementById('lineupLegsContainer');
+      container.innerHTML = '<p class="text-center text-slate-400 py-4">讀取中...</p>';
+      document.getElementById('lineupModal').classList.remove('hidden');
+
+      const res = await apiRequest('GET', { action: 'getMatchDetails', matchId });
+      if (!res.success) return alert('載入失敗');
+
+      currentAvailablePlayers = (res.attendanceList || []).filter(p => p.status === 'attending' || p.status === 'late');
+      currentLegFormat = res.legFormat || [];
+      const saved = res.captainLineup || [];
+
+      if (currentAvailablePlayers.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-6">
+            <p class="text-rose-400 font-bold mb-1">⚠️ 尚無出席隊友</p>
+            <p class="text-xs text-slate-400">需有隊員在該場次按「出席」或「遲到」方可排陣。</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = currentLegFormat.map((leg, legIdx) => {
+        const assigned = saved[legIdx] || [];
+        let selects = '';
+        for (let i = 0; i < leg.count; i++) {
+          const selectedPid = assigned[i] || '';
+          selects += `
+            <select data-leg="${legIdx}" data-slot="${i}" class="lineup-select w-full p-2 rounded bg-slate-700 text-xs border border-slate-600 mb-1.5 focus:border-yellow-400">
+              <option value="">-- 出戰人選 ${i + 1} --</option>
+              ${currentAvailablePlayers.map(p => `
+                <option value="${p.userId}" ${String(p.userId) === String(selectedPid) ? 'selected' : ''}>
+                  ${p.name} (Rating: ${p.rating})
+                </option>
+              `).join('')}
+            </select>
+          `;
+        }
+        return `
+          <div class="bg-slate-700/40 p-2.5 rounded-xl border border-slate-600/60">
+            <label class="block font-bold text-yellow-400 mb-1">${leg.name} (${leg.count} 人)</label>
+            ${selects}
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function submitLineup() {
+      if (!currentLineupMatchId) return;
+      const lineup = [];
+      currentLegFormat.forEach((leg, legIdx) => {
+        lineup[legIdx] = [];
+        for (let i = 0; i < leg.count; i++) {
+          const sel = document.querySelector(`.lineup-select[data-leg="${legIdx}"][data-slot="${i}"]`);
+          if (sel && sel.value) lineup[legIdx].push(sel.value);
+        }
+      });
+
+      const res = await apiRequest('POST', { action: 'saveLineup', matchId: currentLineupMatchId, lineup: lineup });
+      alert(res.message || '排陣已更新！');
+      closeModal('lineupModal');
+      loadMatches();
+    }
+
+    async function loadStats() {
+      const tbody = document.getElementById('statsTableBody');
+      const res = await apiRequest('GET', { action: 'getStats' });
+      if (!res.success || !res.stats) return;
+      tbody.innerHTML = res.stats.map(s => `
+        <tr>
+          <td class="p-3 font-semibold">${s.name}</td>
+          <td class="p-3">${s.rating}</td>
+          <td class="p-3 text-emerald-400 font-bold">${s.attendedCount} 場</td>
+        </tr>
+      `).join('');
+    }
+
+    async function loadAdminData() {
+      const pendingList = document.getElementById('pendingUsersList');
+      const res = await apiRequest('GET', { action: 'getUsers' });
+      if (!res.success || !res.users) return;
+      const pending = res.users.filter(u => u.status === 'pending');
+      pendingList.innerHTML = pending.length === 0 ? '<p class="text-slate-400 text-xs">目前沒有待審核會員。</p>' : pending.map(u => `
+        <div class="flex justify-between items-center bg-slate-700 p-2 rounded">
+          <span>${u.name} (Rt.${u.rating})</span>
+          <button onclick="activateUser('${u.id}')" class="bg-emerald-600 px-2 py-1 rounded text-xs cursor-pointer">啟用</button>
+        </div>
+      `).join('');
+    }
+
+    async function activateUser(userId) {
+      const res = await apiRequest('POST', { action: 'activateUser', userId });
+      if (res.success) {
+        alert('已啟用！');
+        loadAdminData();
+      }
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.add('hidden');
+    }
+  </script>
+</body>
+</html>
