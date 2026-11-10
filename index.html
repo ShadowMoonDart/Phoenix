@@ -46,13 +46,15 @@
       <div class="flex justify-between items-center">
         <div>
           <h2 class="text-sm font-bold text-slate-200">隊伍本季賽程</h2>
-          <p id="currentTeamBadge" class="text-[11px] text-slate-400">正在讀取設定...</p>
+          <p id="currentTeamBadge" class="text-[11px] text-slate-400">未設定組別</p>
         </div>
-        <button onclick="triggerQuickSync()" id="syncBtn" class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 shadow">
-          <span>🔄 重新同步</span>
+        <button onclick="loadMatches()" id="syncBtn" class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 shadow">
+          <span>🔄 重新整理</span>
         </button>
       </div>
-      <div id="matchesContainer" class="space-y-3">載入中...</div>
+      <div id="matchesContainer" class="space-y-3">
+        <p class="text-xs text-slate-400 text-center py-4">正在取得賽程...</p>
+      </div>
     </section>
 
     <!-- 2. 出席率統計分頁 -->
@@ -72,36 +74,32 @@
     <section id="tab-admin" class="hidden space-y-4">
       <h2 class="text-sm font-bold text-yellow-400">隊長專屬後台</h2>
 
-      <!-- Phoenix 下拉選單連動設定卡片 -->
       <div class="bg-slate-800 p-4 rounded-xl border border-yellow-500/30 space-y-3 shadow-lg">
         <div class="flex justify-between items-center">
-          <h3 class="text-xs font-bold text-yellow-400">🎯 Phoenix 聯賽組別及隊伍 (下拉選單設定)</h3>
+          <h3 class="text-xs font-bold text-yellow-400">🎯 Phoenix 聯賽組別及隊伍 (選單設定)</h3>
           <a href="https://play.phoenixdarts.com/selectCpttnList.do?cpttnType=ML" target="_blank" class="text-[10px] text-rose-400 underline">官網賽季列表 ↗</a>
         </div>
-        <p class="text-[11px] text-slate-400">貼上官網賽程/成績網址（或只填賽事編號），系統將自動生成組別及隊伍下拉選單：</p>
+        <p class="text-[11px] text-slate-400">貼上官網賽程或成績網址，系統將讀取組別與參賽隊伍：</p>
 
-        <!-- 網址或 ID 輸入 -->
         <div>
           <label class="text-slate-400 block mb-1 text-[11px]">貼上官網網址 (或填 cpttnId)</label>
           <div class="flex gap-1.5">
-            <input type="text" id="cfgUrlInput" placeholder="https://play.phoenixdarts.com/..." class="w-full p-2 rounded bg-slate-700 border border-slate-600 text-xs">
+            <input type="text" id="cfgUrlInput" value="https://play.phoenixdarts.com/selectMatchDetailML.do?cpttnId=97460&searchDivision=94563" class="w-full p-2 rounded bg-slate-700 border border-slate-600 text-xs">
             <button onclick="fetchDropdownData()" id="fetchMenuBtn" class="bg-blue-600 hover:bg-blue-500 px-3 rounded font-bold text-xs whitespace-nowrap">🔍 讀取選單</button>
           </div>
         </div>
 
-        <!-- Scroll-down 下拉選單 1: 組別 -->
         <div>
           <label class="text-slate-300 block mb-1 text-[11px] font-bold">1. 選擇組別 (Division Scroll-down)</label>
           <select id="divisionDropdown" onchange="onDivisionChange()" class="w-full p-2.5 rounded bg-slate-700 border border-slate-600 text-xs text-white">
-            <option value="">-- 請先點擊「讀取選單」或等待載入 --</option>
+            <option value="94563">Division 3 (94563)</option>
           </select>
         </div>
 
-        <!-- Scroll-down 下拉選單 2: 隊伍 -->
         <div>
           <label class="text-slate-300 block mb-1 text-[11px] font-bold">2. 選擇我隊 (Team Scroll-down)</label>
           <select id="teamDropdown" class="w-full p-2.5 rounded bg-slate-700 border border-slate-600 text-xs text-white">
-            <option value="">-- 請先選擇組別 --</option>
+            <option value="all">[同步全組所有比賽]</option>
           </select>
         </div>
 
@@ -119,7 +117,7 @@
 
   </div>
 
-  <!-- Modal 1：查看 9 場陣容或出席狀況 -->
+  <!-- Modal 1：查看 9 場陣容 -->
   <div id="detailModal" class="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 hidden">
     <div class="bg-slate-800 rounded-2xl max-w-lg w-full max-h-[85vh] flex flex-col border border-slate-700 shadow-2xl">
       <div class="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-900/40">
@@ -131,10 +129,7 @@
       </div>
       <div class="p-4 overflow-y-auto space-y-4 text-xs">
         <div>
-          <div class="flex justify-between items-center mb-2">
-            <h4 id="lineupHeaderTitle" class="font-bold text-yellow-400 text-xs">🎯 9 場對陣陣容名單</h4>
-            <span id="lineupStatusBadge" class="text-[10px] px-2 py-0.5 rounded font-bold"></span>
-          </div>
+          <h4 class="font-bold text-yellow-400 text-xs mb-2">🎯 9 場對賽排陣</h4>
           <div id="modalLineupList" class="space-y-1.5 bg-slate-900/60 p-2.5 rounded-xl border border-slate-700/60">載入中...</div>
         </div>
         <div>
@@ -145,7 +140,7 @@
     </div>
   </div>
 
-  <!-- Modal 2：隊長專屬 9 場排陣 Modal (只按出席隊友處理) -->
+  <!-- Modal 2：隊長 9 場排陣 Modal -->
   <div id="lineupModal" class="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 hidden">
     <div class="bg-slate-800 rounded-2xl max-w-lg w-full max-h-[90vh] flex flex-col border border-yellow-500/50 shadow-2xl">
       <div class="p-4 border-b border-slate-700 flex justify-between items-center bg-yellow-500/10">
@@ -165,31 +160,37 @@
   <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbyqU3xJzzh9HpIwb1zXBDWmvNkzzsmaPYrJYx6fv0ezms8YUJU966obQjkkGV3nBwRctg/exec";
 
-    let currentUser = JSON.parse(localStorage.getItem('dart_user')) || null;
+    let currentUser = null;
+    try { currentUser = JSON.parse(localStorage.getItem('dart_user')) || null; } catch(e) {}
     let isRegisterMode = false;
     let currentLineupMatchId = null;
     let currentAvailablePlayers = [];
     let currentLegFormat = [];
     let currentSettings = { cpttnId: "97460", divisionId: "94563", teamName: "" };
 
+    // 封裝超時保護 (8 秒自動終止，絕不卡死)
     async function apiRequest(method, payload = {}) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
       try {
+        let res;
         if (method === 'GET') {
           const query = new URLSearchParams(payload).toString();
-          const res = await fetch(`${API_URL}?${query}`);
-          return await res.json();
+          res = await fetch(`${API_URL}?${query}`, { signal: controller.signal });
         } else {
-          const res = await fetch(API_URL, {
+          res = await fetch(API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify(payload),
-            redirect: 'follow'
+            redirect: 'follow',
+            signal: controller.signal
           });
-          return await res.json();
         }
+        clearTimeout(timeoutId);
+        return await res.json();
       } catch (err) {
-        console.error("API 錯誤:", err);
-        return { success: false, error: err.toString() };
+        clearTimeout(timeoutId);
+        return { success: false, error: err.name === 'AbortError' ? '連線逾時（伺服器回應過慢）' : err.toString() };
       }
     }
 
@@ -208,7 +209,6 @@
         if (currentUser.role === 'admin') {
           document.getElementById('adminTabBtn').classList.remove('hidden');
           loadAdminData();
-          fetchDropdownData();
         }
       } else {
         document.getElementById('authSection').classList.remove('hidden');
@@ -253,7 +253,7 @@
         const rating = document.getElementById('regRating').value.trim();
         if (!name) return alert('請輸入姓名');
         const res = await apiRequest('POST', { action: 'register', email, password, name, rating });
-        alert(res.message);
+        alert(res.message || '註冊已送出');
         if (res.success) toggleAuthMode();
       } else {
         const res = await apiRequest('POST', { action: 'login', email, password });
@@ -263,7 +263,7 @@
           checkAuthState();
           loadMatches();
         } else {
-          alert(res.message);
+          alert(res.message || '登入失敗');
         }
       }
     }
@@ -275,132 +275,31 @@
       loadMatches();
     }
 
-    // 解析貼上的 URL
-    function parseInputUrl(text) {
-      if (!text) return {};
-      const cpttn = text.match(/cpttnId=(\d+)/i);
-      const div = text.match(/searchDivision=(\d+)/i);
-      return {
-        cpttnId: cpttn ? cpttn[1] : (text.match(/^\d+$/) ? text : null),
-        divisionId: div ? div[1] : null
-      };
-    }
-
-    // 核心功能：向後台讀取組別與隊伍選單 (Scroll-down menu)
-    async function fetchDropdownData() {
-      const inputVal = document.getElementById('cfgUrlInput').value.trim();
-      const parsed = parseInputUrl(inputVal);
-
-      const cpttnId = parsed.cpttnId || currentSettings.cpttnId || "97460";
-      const divisionId = parsed.divisionId || currentSettings.divisionId || "94563";
-
-      const btn = document.getElementById('fetchMenuBtn');
-      btn.innerText = '讀取中...';
-
-      const res = await apiRequest('GET', { action: 'getLeagueStructure', cpttnId, divisionId });
-      btn.innerText = '🔍 讀取選單';
-
-      if (res.success) {
-        currentSettings.cpttnId = res.cpttnId;
-        currentSettings.divisionId = res.currentDivisionId;
-
-        // 填充組別選單 (Division Dropdown)
-        const divSelect = document.getElementById('divisionDropdown');
-        if (res.divisions && res.divisions.length > 0) {
-          divSelect.innerHTML = res.divisions.map(d => `
-            <option value="${d.id}" ${String(d.id) === String(res.currentDivisionId) ? 'selected' : ''}>
-              ${d.name} (${d.id})
-            </option>
-          `).join('');
-        } else {
-          divSelect.innerHTML = `<option value="${res.currentDivisionId}">當前組別 (${res.currentDivisionId})</option>`;
-        }
-
-        // 填充隊伍選單 (Team Dropdown)
-        renderTeamDropdown(res.teams || []);
-      } else {
-        alert('讀取選單失敗: ' + (res.error || ''));
-      }
-    }
-
-    function renderTeamDropdown(teams) {
-      const teamSelect = document.getElementById('teamDropdown');
-      if (teams.length === 0) {
-        teamSelect.innerHTML = '<option value="all">[同步該組所有賽事]</option>';
-      } else {
-        teamSelect.innerHTML = `
-          <option value="">-- 請選擇你所屬隊伍 --</option>
-          ${teams.map(t => `<option value="${t}">${t}</option>`).join('')}
-          <option value="all">[同步全組所有比賽]</option>
-        `;
-      }
-    }
-
-    // 當隊長在選單更換組別時，重新抓取該組的隊伍
-    async function onDivisionChange() {
-      const divId = document.getElementById('divisionDropdown').value;
-      if (!divId) return;
-      currentSettings.divisionId = divId;
-      const teamSelect = document.getElementById('teamDropdown');
-      teamSelect.innerHTML = '<option>更新隊伍清單中...</option>';
-      const res = await apiRequest('GET', {
-        action: 'getLeagueStructure',
-        cpttnId: currentSettings.cpttnId,
-        divisionId: divId
-      });
-      if (res.success) {
-        renderTeamDropdown(res.teams || []);
-      }
-    }
-
-    // 隊長確認選單並一鍵同步賽程
-    async function applyAndSyncSchedule() {
-      const divisionId = document.getElementById('divisionDropdown').value;
-      const teamName = document.getElementById('teamDropdown').value;
-      const cpttnId = currentSettings.cpttnId;
-
-      if (!divisionId) return alert('請先選擇組別！');
-      if (!teamName) return alert('請從下拉選單選擇你隊隊伍！');
-
-      const applyBtn = document.getElementById('applyBtn');
-      applyBtn.innerText = '正在同步賽程進系統...';
-
-      // 儲存設定
-      await apiRequest('POST', { action: 'saveSettings', cpttnId, divisionId, teamName });
-
-      // 同步賽程
-      const res = await apiRequest('GET', { action: 'syncMatches', cpttnId, divisionId, teamName });
-      applyBtn.innerHTML = '<span>🔄 確認並同步該組賽程 (9場制)</span>';
-
-      alert(res.message || '同步完成！');
-      loadMatches();
-      switchTab('matches');
-    }
-
-    async function triggerQuickSync() {
-      const res = await apiRequest('GET', { action: 'syncMatches' });
-      alert(res.message || '已更新！');
-      loadMatches();
-    }
-
-    // 載入賽程卡片
+    // 載入賽程
     async function loadMatches() {
       const container = document.getElementById('matchesContainer');
       const badge = document.getElementById('currentTeamBadge');
-      const json = await apiRequest('GET', { action: 'getMatches' });
-      
-      const setRes = await apiRequest('GET', { action: 'getSettings' });
+      container.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">讀取中...</p>';
+
+      // 並行取得賽程與設定
+      const [json, setRes] = await Promise.all([
+        apiRequest('GET', { action: 'getMatches' }),
+        apiRequest('GET', { action: 'getSettings' })
+      ]);
+
       if (setRes.success && setRes.settings) {
         currentSettings = setRes.settings;
-        badge.innerText = `我隊：${setRes.settings.teamName || '未指定'} | 組別：${setRes.settings.divisionId}`;
+        badge.innerText = `我隊：${setRes.settings.teamName || '全組賽程'} | 組別：${setRes.settings.divisionId}`;
+      } else {
+        badge.innerText = '組別：' + currentSettings.divisionId;
       }
 
       if (!json.success || !json.matches || json.matches.length === 0) {
         container.innerHTML = `
-          <div class="text-center py-10 bg-slate-800 rounded-xl border border-slate-700">
-            <p class="text-slate-400 text-xs mb-3">目前沒有賽事紀錄</p>
+          <div class="text-center py-8 bg-slate-800 rounded-xl border border-slate-700">
+            <p class="text-slate-400 text-xs mb-3">目前內部尚無賽事紀錄</p>
             ${currentUser && currentUser.role === 'admin' ? `
-              <button onclick="switchTab('admin')" class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded font-bold">前往後台選擇組別與隊伍</button>
+              <button onclick="switchTab('admin')" class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded font-bold">前往後台同步 Phoenix 賽程</button>
             ` : '<p class="text-[11px] text-slate-500">請等待隊長在後台同步最新賽程</p>'}
           </div>
         `;
@@ -432,8 +331,8 @@
               <span class="text-emerald-400 font-semibold">出席: ${m.counts.attending}</span>
               <span class="text-amber-400 font-semibold">遲到: ${m.counts.late}</span>
               <span class="text-rose-400 font-semibold">缺席: ${m.counts.absent}</span>
-              <button onclick="viewMatchDetails('${m.id}', '${m.opponent}', '${m.venue}', '${m.score || ''}', ${isFinished})" class="ml-auto text-rose-400 hover:text-rose-300 underline font-medium">
-                ${isFinished ? '查看官網 9 場名單 ↗' : '查看簽到/排陣 ↗'}
+              <button onclick="viewMatchDetails('${m.id}', '${m.opponent}', '${m.venue}', '${m.score || ''}')" class="ml-auto text-rose-400 hover:text-rose-300 underline font-medium">
+                查看簽到/排陣 ↗
               </button>
             </div>
 
@@ -454,125 +353,4 @@
       }).join('');
     }
 
-    async function submitAttendance(matchId, status) {
-      if (!currentUser) return alert('請先登入！');
-      const res = await apiRequest('POST', { action: 'checkIn', matchId, userId: currentUser.id, status });
-      alert(res.message);
-      loadMatches();
-    }
-
-    async function viewMatchDetails(matchId, opponent, venue, score, isFinished) {
-      document.getElementById('modalMatchTitle').innerText = `VS ${opponent}`;
-      document.getElementById('modalMatchSubtitle').innerText = `${venue ? '地點: ' + venue : ''} ${score ? ' | 比分: ' + score : ''}`;
-      document.getElementById('modalAttList').innerHTML = '載入中...';
-      document.getElementById('modalLineupList').innerHTML = '讀取 9 場陣容中...';
-      document.getElementById('detailModal').classList.remove('hidden');
-
-      const res = await apiRequest('GET', { action: 'getMatchDetails', matchId });
-      if (!res.success) return;
-
-      const badge = document.getElementById('lineupStatusBadge');
-      const headerTitle = document.getElementById('lineupHeaderTitle');
-
-      // 已完賽：直接展示官網 9 場出賽名單
-      if (res.isFinished && res.officialLegs && res.officialLegs.length > 0) {
-        headerTitle.innerText = '🏆 Phoenix 官網正式 9 場對戰紀錄';
-        badge.innerText = '已完賽官方數據';
-        badge.className = 'text-[10px] px-2 py-0.5 rounded font-bold bg-emerald-600 text-white';
-
-        document.getElementById('modalLineupList').innerHTML = res.officialLegs.map(leg => `
-          <div class="border-b border-slate-700/60 pb-1.5 last:border-0">
-            <div class="flex justify-between text-[11px] font-bold text-yellow-400 mb-0.5">
-              <span>第 ${leg.set} 場: ${leg.gameType}</span>
-              <span class="text-white bg-slate-800 px-1.5 rounded">${leg.score || '完賽'}</span>
-            </div>
-            <div class="grid grid-cols-2 text-[11px] text-slate-300">
-              <div>主隊: <span class="font-semibold text-rose-300">${leg.homePlayer || '-'}</span></div>
-              <div>客隊: <span class="font-semibold text-blue-300">${leg.awayPlayer || '-'}</span></div>
-            </div>
-          </div>
-        `).join('');
-      } else {
-        // 未完賽：顯示隊長排陣
-        headerTitle.innerText = '🎯 隊長預排 9 場出賽名單';
-        badge.innerText = '賽前預排';
-        badge.className = 'text-[10px] px-2 py-0.5 rounded font-bold bg-amber-600 text-white';
-
-        const captainLineup = res.captainLineup || [];
-        const legFormat = res.legFormat || [];
-        const atts = res.attendanceList || [];
-
-        if (captainLineup.length === 0) {
-          document.getElementById('modalLineupList').innerHTML = '<p class="text-slate-400 text-center py-3">隊長尚未提交 9 場出賽排陣。</p>';
-        } else {
-          document.getElementById('modalLineupList').innerHTML = legFormat.map((leg, idx) => {
-            const playerIds = captainLineup[idx] || [];
-            const names = playerIds.map(pid => {
-              const p = atts.find(u => String(u.userId) === String(pid));
-              return p ? `${p.name} (Rt.${p.rating})` : '未指定';
-            }).join('、');
-            return `
-              <div class="border-b border-slate-700/50 pb-1.5 last:border-0 flex justify-between items-center">
-                <span class="text-yellow-400 font-semibold">${leg.name}</span>
-                <span class="text-slate-200">${names || '<span class="text-slate-500">未排</span>'}</span>
-              </div>
-            `;
-          }).join('');
-        }
-      }
-
-      // 出席隊員
-      const atts = res.attendanceList || [];
-      if (atts.length === 0) {
-        document.getElementById('modalAttList').innerHTML = '<p class="text-slate-400">目前尚無隊友簽到。</p>';
-      } else {
-        document.getElementById('modalAttList').innerHTML = atts.map(a => {
-          let b = a.status === 'attending' ? '<span class="text-emerald-400 font-bold">出席</span>' :
-                 (a.status === 'late' ? '<span class="text-amber-400 font-bold">遲到</span>' : '<span class="text-rose-400">缺席</span>');
-          return `
-            <div class="flex justify-between items-center bg-slate-700/40 p-2 rounded">
-              <span><b>${a.name}</b> (Rt. ${a.rating || 0})</span>
-              ${b}
-            </div>
-          `;
-        }).join('');
-      }
-    }
-
-    async function openLineupModal(matchId, opponent) {
-      currentLineupMatchId = matchId;
-      const container = document.getElementById('lineupLegsContainer');
-      container.innerHTML = '<p class="text-center text-slate-400 py-4">讀取 9 場名單及出席隊友中...</p>';
-      document.getElementById('lineupModal').classList.remove('hidden');
-
-      const res = await apiRequest('GET', { action: 'getMatchDetails', matchId });
-      if (!res.success) return alert('載入失敗');
-
-      // 嚴格只挑選出席或遲到的隊友
-      currentAvailablePlayers = (res.attendanceList || []).filter(p => p.status === 'attending' || p.status === 'late');
-      currentLegFormat = res.legFormat || [];
-      const saved = res.captainLineup || [];
-
-      if (currentAvailablePlayers.length === 0) {
-        container.innerHTML = `
-          <div class="text-center py-8">
-            <p class="text-rose-400 font-bold mb-1">⚠️ 尚無出席隊友</p>
-            <p class="text-xs text-slate-400">需有隊員在該賽程點選「出席」或「遲到」方可排陣。</p>
-          </div>
-        `;
-        return;
-      }
-
-      container.innerHTML = currentLegFormat.map((leg, legIdx) => {
-        const assigned = saved[legIdx] || [];
-        let selects = '';
-        for (let i = 0; i < leg.count; i++) {
-          const selectedPid = assigned[i] || '';
-          selects += `
-            <select data-leg="${legIdx}" data-slot="${i}" class="lineup-select w-full p-2 rounded bg-slate-700 text-xs border border-slate-600 mb-1.5 focus:border-yellow-400">
-              <option value="">-- 出戰人選 ${i + 1} --</option>
-              ${currentAvailablePlayers.map(p => `
-                <option value="${p.userId}" ${String(p.userId) === String(selectedPid) ? 'selected' : ''}>
-                  ${p.name} (Rating: ${p.rating})
-                </option>
-              `).join(''
+    async function submitAttendance(matchId, st
