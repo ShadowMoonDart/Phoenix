@@ -21,15 +21,15 @@
     <button onclick="switchTab('admin')" id="btn-admin" class="tab-btn p-3 border-b-2 border-transparent hidden text-yellow-400">隊長管理</button>
   </nav>
 
-  <!-- 浮動除錯狀態欄 (若有連線問題會在此顯示，不再默默卡死) -->
-  <div id="debugBar" class="hidden bg-rose-900/80 border-b border-rose-500 px-4 py-2 text-xs text-rose-200 flex justify-between items-center">
+  <!-- 提示條 -->
+  <div id="debugBar" class="hidden bg-rose-900/90 border-b border-rose-500 px-4 py-2 text-xs text-rose-100 flex justify-between items-center">
     <span id="debugMsg"></span>
     <button onclick="document.getElementById('debugBar').classList.add('hidden')" class="font-bold ml-2">✕</button>
   </div>
 
   <div class="p-4 max-w-lg mx-auto">
 
-    <!-- 登入 / 註冊面板 -->
+    <!-- 登入面板 -->
     <section id="authSection" class="bg-slate-800 p-5 rounded-2xl border border-slate-700 my-4 shadow-lg">
       <h2 class="text-base font-bold mb-3 text-white" id="authTitle">隊員登入</h2>
       <div class="space-y-3">
@@ -76,42 +76,47 @@
       </div>
     </section>
 
-    <!-- 3. 隊長管理分頁 -->
+    <!-- 3. 隊長管理分頁 (智能一鍵同步) -->
     <section id="tab-admin" class="hidden space-y-4">
       <h2 class="text-sm font-bold text-yellow-400">隊長專屬後台</h2>
 
-      <div class="bg-slate-800 p-4 rounded-xl border border-yellow-500/30 space-y-3 shadow-lg">
+      <div class="bg-slate-800 p-4 rounded-xl border border-yellow-500/40 space-y-3 shadow-lg">
         <div class="flex justify-between items-center">
-          <h3 class="text-xs font-bold text-yellow-400">🎯 Phoenix 聯賽組別及隊伍 (選單設定)</h3>
-          <a href="https://play.phoenixdarts.com/selectCpttnList.do?cpttnType=ML" target="_blank" class="text-[10px] text-rose-400 underline">官網賽季列表 ↗</a>
+          <h3 class="text-xs font-bold text-yellow-400">🎯 Phoenix 聯賽賽程同步 (智能模式)</h3>
+          <a href="https://play.phoenixdarts.com/selectCpttnList.do?cpttnType=ML" target="_blank" class="text-[10px] text-rose-400 underline">開啟官網 ↗</a>
         </div>
-        <p class="text-[11px] text-slate-400">貼上官網賽程或成績網址，系統將讀取組別與參賽隊伍：</p>
+        <p class="text-[11px] text-slate-300">貼上你在 Phoenix 官網查閱的賽程網址，系統將自動解析隊伍與組別並同步 9 場賽制：</p>
 
+        <!-- 網址輸入框 -->
         <div>
-          <label class="text-slate-400 block mb-1 text-[11px]">貼上官網網址 (或填 cpttnId)</label>
-          <div class="flex gap-1.5">
-            <input type="text" id="cfgUrlInput" value="https://play.phoenixdarts.com/selectMatchDetailML.do?cpttnId=97460&searchDivision=94563" class="w-full p-2 rounded bg-slate-700 border border-slate-600 text-xs">
-            <button type="button" onclick="fetchDropdownData()" id="fetchMenuBtn" class="bg-blue-600 hover:bg-blue-500 px-3 rounded font-bold text-xs whitespace-nowrap cursor-pointer">🔍 讀取選單</button>
+          <label class="text-slate-400 block mb-1 text-[11px]">官網賽程完整網址</label>
+          <input type="text" id="cfgUrlInput" value="https://play.phoenixdarts.com/selectMatchListML.do?cpttnId=97460&sortType1=1&searchGubunSort=1&searchTeam=208464&searchDivision=94563&searchStage=145518&searchGubun=1&searchGubunNm=" class="w-full p-2.5 rounded bg-slate-700 border border-slate-600 text-xs font-mono text-slate-200 focus:border-yellow-400">
+        </div>
+
+        <!-- 核心大按鈕：一鍵全自動同步 -->
+        <button type="button" onclick="autoSyncByUrl()" id="autoSyncBtn" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold p-3 rounded-xl text-xs transition shadow-lg flex justify-center items-center gap-2 cursor-pointer">
+          <span class="text-sm">🚀</span>
+          <span>一鍵全自動同步本季 9 場賽程</span>
+        </button>
+
+        <!-- 選單輔助檢視區 (自動提取後的備用選單) -->
+        <div class="border-t border-slate-700/80 pt-3 space-y-2 text-xs">
+          <p class="text-[10px] text-slate-400">或從官網提取的選單中手動挑選組別：</p>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="text-[10px] text-slate-400 block mb-1">組別 (Division)</label>
+              <select id="divisionDropdown" class="w-full p-2 rounded bg-slate-700 border border-slate-600 text-[11px] text-white">
+                <option value="94563">Division 3 (94563)</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-[10px] text-slate-400 block mb-1">隊伍 (Team)</label>
+              <select id="teamDropdown" class="w-full p-2 rounded bg-slate-700 border border-slate-600 text-[11px] text-white">
+                <option value="208464">已選定隊伍 (208464)</option>
+              </select>
+            </div>
           </div>
         </div>
-
-        <div>
-          <label class="text-slate-300 block mb-1 text-[11px] font-bold">1. 選擇組別 (Division Scroll-down)</label>
-          <select id="divisionDropdown" onchange="onDivisionChange()" class="w-full p-2.5 rounded bg-slate-700 border border-slate-600 text-xs text-white">
-            <option value="94563">Division 3 (94563)</option>
-          </select>
-        </div>
-
-        <div>
-          <label class="text-slate-300 block mb-1 text-[11px] font-bold">2. 選擇我隊 (Team Scroll-down)</label>
-          <select id="teamDropdown" class="w-full p-2.5 rounded bg-slate-700 border border-slate-600 text-xs text-white">
-            <option value="all">[同步全組所有比賽]</option>
-          </select>
-        </div>
-
-        <button type="button" onclick="applyAndSyncSchedule()" id="applyBtn" class="w-full bg-emerald-600 hover:bg-emerald-500 font-bold p-2.5 rounded text-xs transition shadow cursor-pointer">
-          🔄 確認並同步該組賽程 (9場制)
-        </button>
       </div>
 
       <!-- 待審批會員 -->
@@ -123,7 +128,7 @@
 
   </div>
 
-  <!-- Modal 1：查看 9 場排陣或出席狀況 -->
+  <!-- Modal 1：查看 9 場陣容 -->
   <div id="detailModal" class="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 hidden">
     <div class="bg-slate-800 rounded-2xl max-w-lg w-full max-h-[85vh] flex flex-col border border-slate-700 shadow-2xl">
       <div class="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-900/40">
@@ -164,16 +169,13 @@
   </div>
 
   <script>
-    // ⚠️ 你的 Apps Script 網址
     const API_URL = "https://script.google.com/macros/s/AKfycbyqU3xJzzh9HpIwb1zXBDWmvNkzzsmaPYrJYx6fv0ezms8YUJU966obQjkkGV3nBwRctg/exec";
 
-    // 安全讀取 currentUser
     let currentUser = null;
     try {
       const saved = localStorage.getItem('dart_user');
       if (saved) currentUser = JSON.parse(saved);
     } catch(e) {
-      console.warn("User storage parse error, cleared.");
       localStorage.removeItem('dart_user');
     }
 
@@ -192,10 +194,9 @@
       }
     }
 
-    // 防卡死 API 封裝 (8 秒超時保護)
     async function apiRequest(method, payload = {}) {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 8000);
+      const timeoutId = setTimeout(() => controller.abort(), 12000); // 12秒保護
       try {
         let res;
         if (method === 'GET') {
@@ -211,24 +212,18 @@
           });
         }
         clearTimeout(timeoutId);
-        const data = await res.json();
-        return data;
+        return await res.json();
       } catch (err) {
         clearTimeout(timeoutId);
-        const errMsg = err.name === 'AbortError' ? '連線逾時，後端響應過慢' : err.toString();
+        const errMsg = err.name === 'AbortError' ? '連線逾時，伺服器響應較慢' : err.toString();
         showDebug(errMsg);
         return { success: false, error: errMsg };
       }
     }
 
-    // 初始化頁面
     window.addEventListener('DOMContentLoaded', () => {
-      try {
-        checkAuthState();
-        loadMatches();
-      } catch(err) {
-        showDebug("初始化出錯: " + err.message);
-      }
+      checkAuthState();
+      loadMatches();
     });
 
     function checkAuthState() {
@@ -255,7 +250,6 @@
       }
     }
 
-    // 穩健切換 Tab
     function switchTab(tabId) {
       ['matches', 'stats', 'admin'].forEach(t => {
         const el = document.getElementById(`tab-${t}`);
@@ -274,9 +268,7 @@
         targetBtn.classList.add('border-rose-500', 'text-rose-500', 'font-bold');
         targetBtn.classList.remove('border-transparent');
       }
-
       if (tabId === 'stats') loadStats();
-      if (tabId === 'admin') fetchDropdownData();
     }
 
     function toggleAuthMode() {
@@ -288,7 +280,6 @@
       document.getElementById('registerFields').classList.toggle('hidden', !isRegisterMode);
     }
 
-    // 處理登入與註冊
     async function handleAuthAction() {
       const email = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value.trim();
@@ -329,7 +320,40 @@
       loadMatches();
     }
 
-    // 載入賽程
+    // 核心亮點：一鍵全自動智能同步
+    async function autoSyncByUrl() {
+      const urlInput = document.getElementById('cfgUrlInput').value.trim();
+      if (!urlInput) return alert('請貼上 Phoenix 官網賽程網址！');
+
+      const syncBtn = document.getElementById('autoSyncBtn');
+      syncBtn.disabled = true;
+      syncBtn.innerHTML = `<span>⏳ 正在連線 Phoenix 抓取 9 場賽程...</span>`;
+
+      const res = await apiRequest('GET', { action: 'autoSyncFromUrl', url: encodeURIComponent(urlInput) });
+      syncBtn.disabled = false;
+      syncBtn.innerHTML = `<span class="text-sm">🚀</span><span>一鍵全自動同步本季 9 場賽程</span>`;
+
+      if (res.success) {
+        alert(res.message || `成功同步 ${res.count} 場賽事！`);
+        
+        // 更新下拉選單
+        const divSelect = document.getElementById('divisionDropdown');
+        if (res.divisions && res.divisions.length > 0 && divSelect) {
+          divSelect.innerHTML = res.divisions.map(d => `<option value="${d.id}">${d.name}</option>`).join('');
+        }
+        const teamSelect = document.getElementById('teamDropdown');
+        if (res.teams && res.teams.length > 0 && teamSelect) {
+          teamSelect.innerHTML = res.teams.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+        }
+
+        loadMatches();
+        switchTab('matches');
+      } else {
+        alert('同步失敗: ' + (res.message || res.error || '請確認網址格式正確'));
+      }
+    }
+
+    // 載入賽程列表
     async function loadMatches() {
       const container = document.getElementById('matchesContainer');
       const badge = document.getElementById('currentTeamBadge');
@@ -340,9 +364,7 @@
 
       if (setRes.success && setRes.settings) {
         currentSettings = setRes.settings;
-        if (badge) badge.innerText = `我隊：${setRes.settings.teamName || '全組賽程'} | 組別：${setRes.settings.divisionId}`;
-      } else if (badge) {
-        badge.innerText = `組別：${currentSettings.divisionId}`;
+        if (badge) badge.innerText = `我隊：${setRes.settings.teamName || '已同步賽程'} | 組別：${setRes.settings.divisionId}`;
       }
 
       if (!json.success || !json.matches || json.matches.length === 0) {
@@ -351,7 +373,7 @@
             <div class="text-center py-8 bg-slate-800 rounded-xl border border-slate-700">
               <p class="text-slate-400 text-xs mb-3">目前內部尚無賽事紀錄</p>
               ${currentUser && currentUser.role === 'admin' ? `
-                <button onclick="switchTab('admin')" class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded font-bold cursor-pointer">前往後台同步 Phoenix 賽程</button>
+                <button onclick="switchTab('admin')" class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded font-bold cursor-pointer">前往後台一鍵同步 Phoenix 賽程</button>
               ` : '<p class="text-[11px] text-slate-500">請等待隊長在後台同步最新賽程</p>'}
             </div>
           `;
@@ -378,7 +400,7 @@
               <h3 class="font-bold text-base text-white">VS ${m.opponent}</h3>
               ${isFinished ? `<span class="text-yellow-400 font-black text-sm bg-slate-900 px-2 py-0.5 rounded">${m.score}</span>` : ''}
             </div>
-            <p class="text-xs text-slate-300">📍 地點: ${m.venue || '官方場地'}</p>
+            <p class="text-xs text-slate-300">📍 地點: ${m.venue || '官方指定鏢吧'}</p>
 
             <div class="flex items-center gap-3 bg-slate-900/60 p-2 rounded-lg text-[11px]">
               <span class="text-emerald-400 font-semibold">出席: ${m.counts ? m.counts.attending : 0}</span>
@@ -411,80 +433,6 @@
       const res = await apiRequest('POST', { action: 'checkIn', matchId, userId: currentUser.id, status });
       alert(res.message || '已送出！');
       loadMatches();
-    }
-
-    // 隊長讀取組別與隊伍選單
-    async function fetchDropdownData() {
-      const inputVal = document.getElementById('cfgUrlInput').value.trim();
-      const cpttnMatch = inputVal.match(/cpttnId=(\d+)/i);
-      const divMatch = inputVal.match(/searchDivision=(\d+)/i);
-
-      const cpttnId = cpttnMatch ? cpttnMatch[1] : (inputVal.match(/^\d+$/) ? inputVal : currentSettings.cpttnId);
-      const divisionId = divMatch ? divMatch[1] : currentSettings.divisionId;
-
-      const btn = document.getElementById('fetchMenuBtn');
-      if (btn) btn.innerText = '讀取中...';
-
-      const res = await apiRequest('GET', { action: 'getLeagueStructure', cpttnId, divisionId });
-      if (btn) btn.innerText = '🔍 讀取選單';
-
-      if (res.success) {
-        currentSettings.cpttnId = res.cpttnId;
-        currentSettings.divisionId = res.currentDivisionId;
-
-        const divSelect = document.getElementById('divisionDropdown');
-        if (divSelect) {
-          if (res.divisions && res.divisions.length > 0) {
-            divSelect.innerHTML = res.divisions.map(d => `
-              <option value="${d.id}" ${String(d.id) === String(res.currentDivisionId) ? 'selected' : ''}>
-                ${d.name} (${d.id})
-              </option>
-            `).join('');
-          } else {
-            divSelect.innerHTML = `<option value="${res.currentDivisionId}">組別 (${res.currentDivisionId})</option>`;
-          }
-        }
-        renderTeamDropdown(res.teams || []);
-      }
-    }
-
-    function renderTeamDropdown(teams) {
-      const teamSelect = document.getElementById('teamDropdown');
-      if (!teamSelect) return;
-      if (teams.length === 0) {
-        teamSelect.innerHTML = '<option value="all">[同步全組所有比賽]</option>';
-      } else {
-        teamSelect.innerHTML = `
-          <option value="">-- 請選擇你隊 --</option>
-          ${teams.map(t => `<option value="${t}">${t}</option>`).join('')}
-          <option value="all">[同步全組所有賽事]</option>
-        `;
-      }
-    }
-
-    async function onDivisionChange() {
-      const divId = document.getElementById('divisionDropdown').value;
-      if (!divId) return;
-      currentSettings.divisionId = divId;
-      const res = await apiRequest('GET', { action: 'getLeagueStructure', cpttnId: currentSettings.cpttnId, divisionId: divId });
-      if (res.success) renderTeamDropdown(res.teams || []);
-    }
-
-    async function applyAndSyncSchedule() {
-      const divisionId = document.getElementById('divisionDropdown').value;
-      const teamName = document.getElementById('teamDropdown').value;
-      const cpttnId = currentSettings.cpttnId;
-
-      const applyBtn = document.getElementById('applyBtn');
-      if (applyBtn) applyBtn.innerText = '正在同步中...';
-
-      await apiRequest('POST', { action: 'saveSettings', cpttnId, divisionId, teamName });
-      const res = await apiRequest('GET', { action: 'syncMatches', cpttnId, divisionId, teamName });
-      if (applyBtn) applyBtn.innerText = '🔄 確認並同步該組賽程 (9場制)';
-
-      alert(res.message || '賽程已同步！');
-      loadMatches();
-      switchTab('matches');
     }
 
     async function viewMatchDetails(matchId, opponent, venue, score) {
