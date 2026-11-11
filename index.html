@@ -47,7 +47,7 @@
         <input type="password" id="password" placeholder="Pin碼" class="w-full p-3 rounded-xl bg-slate-800 text-xs border border-slate-700 text-slate-200 focus:outline-none focus:border-rose-500">
         <div id="registerFields" class="hidden space-y-3">
           <input type="text" id="regName" placeholder="隊員姓名 / 鏢名" class="w-full p-3 rounded-xl bg-slate-800 text-xs border border-slate-700 text-slate-200">
-          <input type="number" step="0.01" id="regRating" placeholder="Rating 初始鏢力 (例如: 10.5)" class="w-full p-3 rounded-xl bg-slate-800 text-xs border border-slate-700 text-slate-200">
+          <input type="number" step="0.1" id="regRating" placeholder="Phoenix 初始 Rating (例如: 14.5)" class="w-full p-3 rounded-xl bg-slate-800 text-xs border border-slate-700 text-slate-200">
         </div>
         <button onclick="handleAuthAction()" id="authSubmitBtn" class="w-full bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 font-bold p-3 rounded-xl text-xs transition cursor-pointer shadow-lg">登入</button>
         <p class="text-center text-xs text-slate-400">
@@ -73,20 +73,24 @@
       </div>
     </section>
 
-    <!-- 2. 出席率與戰力統計分頁 -->
+    <!-- 2. 出席率與戰力統計分頁 (PHOENIX Scale & 局勝率) -->
     <section id="tab-stats" class="hidden space-y-4">
-      <h2 class="text-sm font-bold text-slate-300 flex items-center gap-2">
-        <span>🏆</span> 隊員戰力與出席排行榜
-      </h2>
+      <div class="flex justify-between items-center">
+        <h2 class="text-sm font-bold text-slate-300 flex items-center gap-2">
+          <span>🏆</span> 隊員戰力與出席排行榜
+        </h2>
+        <span class="text-[10px] bg-indigo-950 text-indigo-300 border border-indigo-800 px-2 py-0.5 rounded-full font-bold">Phoenix Scale</span>
+      </div>
+
       <div class="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow-xl">
         <table class="w-full text-left text-xs">
           <thead class="bg-slate-800/80 text-slate-300 uppercase tracking-wider text-[11px]">
             <tr>
               <th class="p-3">隊員</th>
-              <th class="p-3">即時 Rating</th>
-              <th class="p-3">01 / Cricket 場均</th>
+              <th class="p-3">PHOENIX Rating</th>
+              <th class="p-3">場均 (01/Crik)</th>
               <th class="p-3">出席場數</th>
-              <th class="p-3">局/盤 勝率</th>
+              <th class="p-3">Leg 勝率 (勝/總)</th>
             </tr>
           </thead>
           <tbody id="statsTableBody" class="divide-y divide-slate-800"></tbody>
@@ -272,7 +276,7 @@
             <p class="text-xs font-black text-indigo-300 flex items-center gap-1">
               <span>🧠</span> AI 專項數據智能排陣 (01 / Cricket)
             </p>
-            <p class="text-[10px] text-slate-400">依據選手 3 盤 2 勝歷史實測 PPD 及 MPR 自動最佳化</p>
+            <p class="text-[10px] text-slate-400">依據 Phoenix 專項換算 PPD 及 MPR 自動最佳化</p>
           </div>
           <button type="button" onclick="triggerAiLineupSuggestion()" class="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold px-3 py-1.5 rounded-xl text-xs transition shadow cursor-pointer">
             ✨ 一鍵 AI 排陣
@@ -291,7 +295,7 @@
     </div>
   </div>
 
-  <!-- Modal 3：隊長專用 - 各 Leg 賽果及選手詳細個人數據錄入/修改視窗 (支援 3 盤 2 勝制) -->
+  <!-- Modal 3：隊長專用 - 各 Leg 賽果及選手詳細個人數據錄入/修改視窗 -->
   <div id="statsInputModal" class="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden">
     <div class="bg-slate-900 rounded-3xl max-w-lg w-full max-h-[92vh] flex flex-col border border-emerald-500/60 shadow-2xl">
       <div class="p-4 border-b border-slate-800 bg-slate-950/70 flex justify-between items-center">
@@ -299,7 +303,7 @@
           <h3 class="text-sm font-black text-emerald-400 flex items-center gap-1.5">
             <span>📝</span> 錄入 / 修改回合與 3 盤 2 勝制選手數據
           </h3>
-          <p class="text-[11px] text-slate-400 mt-0.5">單打/雙打自動展開 3 盤輸入，即時更新選手 Rating 與專項數據庫</p>
+          <p class="text-[11px] text-slate-400 mt-0.5">每局勝負將即時累計至全體隊員的 Leg 勝率及戰力榜</p>
         </div>
         <button onclick="closeModal('statsInputModal')" class="w-8 h-8 rounded-full bg-slate-800 text-slate-300 hover:bg-slate-700 flex items-center justify-center font-bold text-base cursor-pointer">&times;</button>
       </div>
@@ -315,7 +319,7 @@
 
       <div class="p-4 border-t border-slate-800 bg-slate-950/60">
         <button onclick="saveMatchStatsData()" class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black p-3.5 rounded-xl text-xs transition cursor-pointer shadow-lg flex items-center justify-center gap-2">
-          <span>💾</span> 儲存成績並即時重算 Rating
+          <span>💾</span> 儲存成績並依 Phoenix Scale 重算
         </button>
       </div>
     </div>
@@ -410,7 +414,6 @@
 
     let editingLegs = [];
 
-    // 判斷是否為 3 盤 2 勝項目 (男單、女單、雙打)
     function isBestOf3Game(legName, count) {
       const name = (legName || '').toLowerCase();
       if (name.includes('男單') || name.includes('女單') || name.includes('雙打')) return true;
@@ -896,21 +899,17 @@
           const playerIds = captainLineup[idx] || [];
           const isBo3 = isBestOf3Game(leg.name, leg.count);
           
-          // 抓取該 Leg 總結果
           const legStatItems = legStats.filter(s => s.legIndex === idx);
           const firstStat = legStatItems[0];
           const legResultBadge = firstStat ? (firstStat.result === 'win' ? '<span class="text-[10px] bg-emerald-950 text-emerald-400 px-1.5 py-0.5 rounded font-black border border-emerald-800">勝</span>' : '<span class="text-[10px] bg-rose-950 text-rose-400 px-1.5 py-0.5 rounded font-black border border-rose-800">負</span>') : '';
 
-          // 選手名單
           const pNames = playerIds.map(pid => {
             const p = atts.find(u => String(u.userId) === String(pid)) || allActive.find(u => String(u.userId) === String(pid));
             return p ? p.name : '未指定';
           }).join(' & ');
 
-          // 盤數數據明細
           let subSetsHtml = '';
           if (legStatItems.length > 0) {
-            // 分盤分組
             const setsMap = {};
             legStatItems.forEach(item => {
               const sIdx = item.subSet || 1;
@@ -1006,7 +1005,7 @@
               <option value="">-- 選派隊員 ${i + 1} --</option>
               ${currentAvailablePlayers.map(p => `
                 <option value="${p.userId}" ${String(p.userId) === String(selectedPid) ? 'selected' : ''}>
-                  ${p.name} (Rating: ${p.rating} | 01:${p.avgPpd || '-'} Crik:${p.avgMpr || '-'})
+                  ${p.name} (Phoenix Rt: ${p.rating} [${p.ratingClass || '-'}] | 01:${p.avgPpd || '-'} Crik:${p.avgMpr || '-'})
                 </option>
               `).join('')}
             </select>
@@ -1027,7 +1026,6 @@
       }).join('');
     }
 
-    /* 結合 3 盤 2 勝 PPD 與 MPR 專項數據之 AI 智能演算 */
     function triggerAiLineupSuggestion() {
       if (!currentAvailablePlayers || currentAvailablePlayers.length === 0) {
         return alert('目前沒有可用隊員名單，無法進行 AI 分析。');
@@ -1044,14 +1042,12 @@
         const isBo3 = isBestOf3Game(leg.name, leg.count);
 
         let candidates = [...currentAvailablePlayers].sort((a, b) => {
-          // 出場頻率優先平衡
           if (appearanceCounts[a.userId] !== appearanceCounts[b.userId]) {
             return appearanceCounts[a.userId] - appearanceCounts[b.userId];
           }
           if (isBo3) {
-            // 3盤2勝制兼顧 01 與 Cricket 綜合實力
-            const pScoreA = (parseFloat(a.avgPpd) || 0) + ((parseFloat(a.avgMpr) || 0) * 25);
-            const pScoreB = (parseFloat(b.avgPpd) || 0) + ((parseFloat(b.avgMpr) || 0) * 25);
+            const pScoreA = (parseFloat(a.avgPpd) || 0) + ((parseFloat(a.avgMpr) || 0) * 11);
+            const pScoreB = (parseFloat(b.avgPpd) || 0) + ((parseFloat(b.avgMpr) || 0) * 11);
             if (pScoreA !== pScoreB) return pScoreB - pScoreA;
           } else if (isCricket) {
             const mprA = parseFloat(a.avgMpr) || 0;
@@ -1072,7 +1068,6 @@
             appearanceCounts[chosen.userId]++;
           }
         } else if (needed === 2) {
-          // 雙打採用強弱互補搭配策略
           const p1 = candidates[0];
           const p2 = candidates[candidates.length - 1] || candidates[1];
           if (p1) { aiLineup[legIdx].push(p1.userId); appearanceCounts[p1.userId]++; }
@@ -1099,7 +1094,7 @@
       if (reasonBadge) {
         reasonBadge.classList.remove('hidden');
         reasonBadge.innerHTML = `
-          <span>🧠 <b>AI 專項推算完成：</b>男單、女單、雙打 (3盤2勝) 優先指派 01/Cricket 雙修頂尖戰力；單局賽事針對性佈陣完成！</span>
+          <span>🧠 <b>AI 專項推算完成：</b>男單、女單、雙打 (3盤2勝) 優先指派 Phoenix 高階雙修戰力；陣容平衡已調整。</span>
         `;
       }
     }
@@ -1127,7 +1122,7 @@
     }
 
     /* ----------------------------------------------------
-       核心升級：男單、女單、雙打必定 3 盤 2 勝數據錄入
+       錄入 / 修改回合與 3 盤 2 勝選手數據 (包含該 Leg 勝負開關)
     ---------------------------------------------------- */
     async function openStatsInputModal(matchId, opponent, currentScore) {
       if (!currentUser || currentUser.role !== 'admin') {
@@ -1175,13 +1170,12 @@
           `;
         }
 
-        // 盤數設定：若是男單、女單、雙打，必定是 3 盤 2 勝制 (Set 1: 01, Set 2: Cricket, Set 3: 決勝局)
         const setsConfig = isBo3 ? [
-          { setNum: 1, label: "第 1 盤 (01 賽制)", defaultType: "ppd", defaultName: "501/701" },
-          { setNum: 2, label: "第 2 盤 (Cricket 賽制)", defaultType: "mpr", defaultName: "Cricket" },
-          { setNum: 3, label: "第 3 盤 (決勝盤 / 若打至1-1)", defaultType: "ppd", defaultName: "Choice/01" }
+          { setNum: 1, label: "第 1 盤 (01 賽制)", defaultType: "ppd" },
+          { setNum: 2, label: "第 2 盤 (Cricket 賽制)", defaultType: "mpr" },
+          { setNum: 3, label: "第 3 盤 (決勝盤 / 若打至1-1)", defaultType: "ppd" }
         ] : [
-          { setNum: 1, label: "單局對決", defaultType: leg.name.toLowerCase().includes('cricket') ? 'mpr' : 'ppd', defaultName: leg.name }
+          { setNum: 1, label: "單局對決", defaultType: leg.name.toLowerCase().includes('cricket') ? 'mpr' : 'ppd' }
         ];
 
         let setsHtml = setsConfig.map(sConfig => {
@@ -1224,16 +1218,17 @@
 
         return `
           <div class="leg-card bg-slate-950 p-3.5 rounded-2xl border border-slate-800 space-y-3" data-leg="${legIdx}">
-            <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+            <!-- 該 Leg 勝負核心選擇按鈕區 -->
+            <div class="flex justify-between items-center border-b border-slate-800 pb-2.5">
               <div>
                 <span class="font-black text-yellow-400 text-xs">${leg.name}</span>
                 ${isBo3 ? '<span class="ml-1.5 text-[10px] bg-cyan-950 text-cyan-300 border border-cyan-800 px-2 py-0.5 rounded-full font-bold">3 盤 2 勝制</span>' : '<span class="ml-1.5 text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full">單局賽</span>'}
               </div>
-              <div class="flex items-center gap-1">
-                <label class="text-[10px] text-slate-400 mr-1 font-bold">此場局果:</label>
-                <select class="leg-result-select bg-slate-800 text-[11px] font-black p-1.5 rounded-lg border border-slate-700 ${legResult === 'win' ? 'text-emerald-400' : 'text-rose-400'}" onchange="this.className='leg-result-select bg-slate-800 text-[11px] font-black p-1.5 rounded-lg border border-slate-700 ' + (this.value==='win'?'text-emerald-400':'text-rose-400')">
-                  <option value="win" ${legResult === 'win' ? 'selected' : ''}>勝 (WIN)</option>
-                  <option value="loss" ${legResult === 'loss' ? 'selected' : ''}>負 (LOSE)</option>
+              <div class="flex items-center gap-1.5 bg-slate-900 p-1 rounded-xl border border-slate-800">
+                <span class="text-[10px] text-slate-300 font-bold ml-1">本局賽果：</span>
+                <select class="leg-result-select text-xs font-black p-1.5 rounded-lg transition cursor-pointer ${legResult === 'win' ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'}" onchange="this.className='leg-result-select text-xs font-black p-1.5 rounded-lg transition cursor-pointer ' + (this.value==='win'?'bg-emerald-600 text-white':'bg-rose-600 text-white')">
+                  <option value="win" ${legResult === 'win' ? 'selected' : ''} class="bg-slate-900 text-emerald-400 font-bold">🏆 勝 (WIN)</option>
+                  <option value="loss" ${legResult === 'loss' ? 'selected' : ''} class="bg-slate-900 text-rose-400 font-bold">❌ 負 (LOSS)</option>
                 </select>
               </div>
             </div>
@@ -1246,7 +1241,6 @@
       }).join('');
     }
 
-    /* 收集各盤與選手的完整數據並提交 */
     async function saveMatchStatsData() {
       if (!currentStatsMatchId) return;
 
@@ -1301,7 +1295,7 @@
       await loadMatches();
     }
 
-    /* 戰力榜載入 */
+    /* 戰力榜載入 (Phoenix Scale 顯示) */
     async function loadStats() {
       const tbody = document.getElementById('statsTableBody');
       const res = await apiRequest('GET', { action: 'getStats' });
@@ -1309,10 +1303,16 @@
       tbody.innerHTML = res.stats.map(s => `
         <tr class="hover:bg-slate-800/40 transition">
           <td class="p-3 font-bold text-white">${s.name}</td>
-          <td class="p-3 font-mono text-yellow-400 font-bold">${s.rating}</td>
+          <td class="p-3 font-mono">
+            <span class="text-yellow-400 font-black text-sm">${s.rating}</span>
+            <span class="text-[10px] bg-slate-800 text-yellow-300 px-1.5 py-0.5 rounded ml-1 font-bold">${s.ratingClass || 'N'}</span>
+          </td>
           <td class="p-3 text-[11px] text-slate-300 font-mono">${s.avgPpd || '-'}/${s.avgMpr || '-'}</td>
           <td class="p-3 text-emerald-400 font-bold">${s.attendedCount} 場</td>
-          <td class="p-3 text-cyan-400 font-black">${s.winRate}% (${s.legsWon}/${s.legsPlayed})</td>
+          <td class="p-3">
+            <span class="text-cyan-400 font-black">${s.winRate}%</span>
+            <span class="text-[10px] text-slate-400 block">${s.legsWon}勝 / ${s.legsPlayed}場</span>
+          </td>
         </tr>
       `).join('');
     }
@@ -1325,7 +1325,7 @@
       const pending = res.users.filter(u => u.status === 'pending');
       pendingList.innerHTML = pending.length === 0 ? '<p class="text-slate-400 text-xs py-2">目前沒有待審核會員。</p>' : pending.map(u => `
         <div class="flex justify-between items-center bg-slate-800 p-2.5 rounded-xl border border-slate-700">
-          <span class="font-bold text-white">${u.name} (初始Rt.${u.rating})</span>
+          <span class="font-bold text-white">${u.name} (初始Phoenix Rt.${u.rating})</span>
           <button onclick="activateUser('${u.id}')" class="bg-emerald-600 hover:bg-emerald-500 font-bold px-3 py-1 rounded-lg text-xs cursor-pointer shadow">啟用</button>
         </div>
       `).join('');
