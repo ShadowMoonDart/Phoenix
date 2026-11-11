@@ -74,7 +74,7 @@
     <section id="tab-admin" class="hidden space-y-4">
       <h2 class="text-sm font-bold text-yellow-400">隊長專屬後台</h2>
 
-      <!-- 賽季賽制設定 -->
+      <!-- 賽季賽制設定 (全下拉選單) -->
       <div class="bg-slate-800 p-4 rounded-xl border border-indigo-500/50 space-y-3 shadow-lg">
         <div class="flex justify-between items-center">
           <h3 class="text-xs font-bold text-indigo-400 flex items-center gap-1">
@@ -84,25 +84,27 @@
         </div>
         
         <div>
-          <label class="text-[11px] text-slate-400 block mb-1">快速套用標準聯賽預設：</label>
-          <select id="presetSelect" onchange="selectPreset(this.value)" class="w-full p-2 rounded bg-slate-700 border border-slate-600 text-xs text-slate-200">
+          <label class="text-[11px] text-slate-400 block mb-1">一鍵套用官方賽制預設：</label>
+          <select id="presetSelect" onchange="selectPreset(this.value)" class="w-full p-2.5 rounded bg-slate-700 border border-slate-600 text-xs text-slate-200">
             <option value="phoenix9">🎯 Phoenix 聯賽標準 9 場制 (3單 4雙 1三人 1隊制)</option>
             <option value="standard7">⚡ 傳統 7 場制 (3單 3雙 1隊制)</option>
             <option value="cup5">🏆 精簡 5 場制 (2單 2雙 1隊制)</option>
-            <option value="custom">✏️ 自訂賽制格式</option>
+            <option value="custom">✏️ 自由自訂模式</option>
           </select>
         </div>
 
-        <!-- 各 Leg 細節編輯列表 -->
-        <div class="space-y-1.5 max-h-56 overflow-y-auto p-2 bg-slate-900/50 rounded-lg border border-slate-700/60" id="legsConfigList">
-          <!-- 動態生成 Leg 輸入項目 -->
+        <label class="text-[11px] text-slate-400 block mt-2">各場次比賽內容 (點擊下拉選單切換)：</label>
+        
+        <!-- 各 Leg 下拉選單列表 -->
+        <div class="space-y-2 max-h-64 overflow-y-auto p-2 bg-slate-900/50 rounded-lg border border-slate-700/60" id="legsConfigList">
+          <!-- 動態生成 Leg 下拉選單 -->
         </div>
 
-        <div class="flex gap-2">
-          <button type="button" onclick="addNewLegRow()" class="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-200 py-1.5 rounded text-xs font-semibold cursor-pointer">
-            ➕ 增加 1 場 (Leg)
+        <div class="flex gap-2 pt-1">
+          <button type="button" onclick="addNewLegRow()" class="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-200 py-2 rounded text-xs font-semibold cursor-pointer">
+            ➕ 加一場 (Add Leg)
           </button>
-          <button type="button" onclick="saveSeasonFormat()" id="saveFormatBtn" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-1.5 rounded text-xs cursor-pointer shadow">
+          <button type="button" onclick="saveSeasonFormat()" id="saveFormatBtn" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 rounded text-xs cursor-pointer shadow">
             💾 儲存並套用賽制
           </button>
         </div>
@@ -219,38 +221,79 @@
     let currentAvailablePlayers = [];
     let currentLegFormat = [];
 
-    // 常用賽制預設模組
+    // 下拉選單所有可選的賽事規格
+    const GAME_OPTIONS = [
+      {
+        group: "單打 (1人)",
+        items: [
+          { label: "單打 501", count: 1 },
+          { label: "單打 701", count: 1 },
+          { label: "單打 Cricket", count: 1 },
+          { label: "單打 Choice", count: 1 },
+          { label: "單打 (Singles - 一般)", count: 1 }
+        ]
+      },
+      {
+        group: "雙打 (2人)",
+        items: [
+          { label: "雙打 501", count: 2 },
+          { label: "雙打 701", count: 2 },
+          { label: "雙打 Cricket", count: 2 },
+          { label: "雙打 Choice", count: 2 },
+          { label: "雙打 (Doubles - 一般)", count: 2 }
+        ]
+      },
+      {
+        group: "三人賽 (3人)",
+        items: [
+          { label: "三人賽 701", count: 3 },
+          { label: "三人賽 901", count: 3 },
+          { label: "三人賽 Team Cricket", count: 3 },
+          { label: "三人賽 (Trios - 一般)", count: 3 }
+        ]
+      },
+      {
+        group: "隊制四人賽 (4人)",
+        items: [
+          { label: "隊制四人賽 Gallon 901", count: 4 },
+          { label: "隊制四人賽 Gallon 1101", count: 4 },
+          { label: "隊制四人賽 Gallon Choice", count: 4 },
+          { label: "隊制四人賽 (Gallon - 一般)", count: 4 }
+        ]
+      }
+    ];
+
+    // 官方常見預設配置
     const PRESETS = {
       phoenix9: [
-        { name: "Leg 1: 單打 (Singles)", count: 1 },
-        { name: "Leg 2: 單打 (Singles)", count: 1 },
-        { name: "Leg 3: 雙打 (Doubles)", count: 2 },
-        { name: "Leg 4: 雙打 (Doubles)", count: 2 },
-        { name: "Leg 5: 單打 (Singles)", count: 1 },
-        { name: "Leg 6: 雙打 (Doubles)", count: 2 },
-        { name: "Leg 7: 雙打 (Doubles)", count: 2 },
-        { name: "Leg 8: 三人賽 (Trios)", count: 3 },
-        { name: "Leg 9: 隊制四人賽 (Gallon)", count: 4 }
+        { name: "單打 501", count: 1 },
+        { name: "單打 Cricket", count: 1 },
+        { name: "雙打 501", count: 2 },
+        { name: "雙打 Cricket", count: 2 },
+        { name: "單打 701", count: 1 },
+        { name: "雙打 701", count: 2 },
+        { name: "雙打 Cricket", count: 2 },
+        { name: "三人賽 701", count: 3 },
+        { name: "隊制四人賽 Gallon 901", count: 4 }
       ],
       standard7: [
-        { name: "Leg 1: 單打 (Singles)", count: 1 },
-        { name: "Leg 2: 單打 (Singles)", count: 1 },
-        { name: "Leg 3: 雙打 (Doubles)", count: 2 },
-        { name: "Leg 4: 雙打 (Doubles)", count: 2 },
-        { name: "Leg 5: 單打 (Singles)", count: 1 },
-        { name: "Leg 6: 雙打 (Doubles)", count: 2 },
-        { name: "Leg 7: 隊制四人賽 (Gallon)", count: 4 }
+        { name: "單打 501", count: 1 },
+        { name: "單打 Cricket", count: 1 },
+        { name: "雙打 501", count: 2 },
+        { name: "雙打 Cricket", count: 2 },
+        { name: "單打 701", count: 1 },
+        { name: "雙打 701", count: 2 },
+        { name: "隊制四人賽 Gallon 901", count: 4 }
       ],
       cup5: [
-        { name: "Leg 1: 單打 (Singles)", count: 1 },
-        { name: "Leg 2: 單打 (Singles)", count: 1 },
-        { name: "Leg 3: 雙打 (Doubles)", count: 2 },
-        { name: "Leg 4: 雙打 (Doubles)", count: 2 },
-        { name: "Leg 5: 隊制四人賽 (Gallon)", count: 4 }
+        { name: "單打 501", count: 1 },
+        { name: "單打 Cricket", count: 1 },
+        { name: "雙打 501", count: 2 },
+        { name: "雙打 Cricket", count: 2 },
+        { name: "隊制四人賽 Gallon 901", count: 4 }
       ]
     };
 
-    // 編輯中的賽制結構
     let editingLegs = [];
 
     async function apiRequest(method, payload = {}) {
@@ -455,7 +498,6 @@
       }).join('');
     }
 
-    // 隊長手動新增賽事
     async function submitNewMatch() {
       const round = document.getElementById('newRound').value.trim();
       const date = document.getElementById('newDate').value.trim();
@@ -480,7 +522,6 @@
       switchTab('matches');
     }
 
-    // 隊長修改/輸入比分
     async function promptUpdateScore(matchId, currentScore) {
       const score = prompt('請輸入比賽最終比分（例如: 5-4、2-7）：', currentScore || '');
       if (score === null) return;
@@ -489,7 +530,6 @@
       loadMatches();
     }
 
-    // 隊長刪除賽事
     async function deleteMatch(matchId) {
       if (!confirm('確定要刪除這場賽事嗎？此動作無法復原！')) return;
       const res = await apiRequest('POST', { action: 'deleteMatch', matchId });
@@ -505,7 +545,7 @@
     }
 
     /* ----------------------------------------------------
-       賽季賽制設定 (Format Management) 邏輯
+       賽季賽制設定 (全下拉選單 Scroll Down Menu)
     ---------------------------------------------------- */
     async function loadSeasonSettings() {
       const res = await apiRequest('GET', { action: 'getSettings' });
@@ -529,44 +569,84 @@
       }
     }
 
+    // 核心：生成每個 Leg 的全下拉選單 (Scroll Down Menu)
     function renderLegsEditor() {
       const container = document.getElementById('legsConfigList');
       const badge = document.getElementById('currentLegsCountBadge');
       if (badge) badge.innerText = `共 ${editingLegs.length} 場`;
       if (!container) return;
 
-      container.innerHTML = editingLegs.map((leg, idx) => `
-        <div class="flex items-center gap-1.5 bg-slate-800 p-1.5 rounded border border-slate-700">
-          <span class="text-[10px] text-yellow-400 font-mono font-bold w-6 text-center">#${idx + 1}</span>
-          <input type="text" value="${leg.name}" onchange="updateLegField(${idx}, 'name', this.value)" class="flex-1 bg-slate-700 text-slate-100 text-[11px] p-1.5 rounded border border-slate-600 focus:outline-none focus:border-indigo-400">
-          <select onchange="updateLegField(${idx}, 'count', parseInt(this.value))" class="bg-slate-700 text-slate-200 text-[11px] p-1.5 rounded border border-slate-600">
-            <option value="1" ${leg.count === 1 ? 'selected' : ''}>1人 (單)</option>
-            <option value="2" ${leg.count === 2 ? 'selected' : ''}>2人 (雙)</option>
-            <option value="3" ${leg.count === 3 ? 'selected' : ''}>3人 (三)</option>
-            <option value="4" ${leg.count === 4 ? 'selected' : ''}>4人 (隊)</option>
-          </select>
-          <button type="button" onclick="removeLegRow(${idx})" class="text-rose-400 hover:text-rose-300 px-1 text-xs font-bold cursor-pointer">&times;</button>
-        </div>
-      `).join('');
+      container.innerHTML = editingLegs.map((leg, idx) => {
+        // 清除純文字中的 "Leg X: " 前綴做比對
+        const cleanName = leg.name.replace(/^Leg\s*\d+\s*:\s*/i, '').trim();
+
+        // 構造分類選項
+        let optionsHtml = '';
+        GAME_OPTIONS.forEach(g => {
+          optionsHtml += `<optgroup label="${g.group}">`;
+          g.items.forEach(item => {
+            const isSelected = (cleanName === item.label) || (leg.name === item.label) || (leg.count === item.count && cleanName.includes(item.label));
+            optionsHtml += `
+              <option value="${item.label}|${item.count}" ${isSelected ? 'selected' : ''}>
+                ${item.label} (${item.count}人出戰)
+              </option>
+            `;
+          });
+          optionsHtml += `</optgroup>`;
+        });
+
+        return `
+          <div class="flex items-center gap-2 bg-slate-800 p-2 rounded-lg border border-slate-700 shadow-sm">
+            <span class="text-xs text-yellow-400 font-mono font-bold w-12 text-center bg-slate-900/80 py-1.5 rounded">
+              Leg ${idx + 1}
+            </span>
+            
+            <!-- 下拉選單 (Scroll Down Menu) -->
+            <select onchange="handleLegDropdownChange(${idx}, this.value)" class="flex-1 bg-slate-700 text-slate-100 text-xs p-2 rounded border border-slate-600 focus:outline-none focus:border-indigo-400 font-medium">
+              ${optionsHtml}
+            </select>
+
+            <span class="text-[11px] font-bold px-2 py-1 rounded bg-slate-900 text-indigo-300 w-12 text-center">
+              ${leg.count} 人
+            </span>
+
+            <button type="button" onclick="removeLegRow(${idx})" title="刪除此場" class="text-rose-400 hover:text-rose-300 p-1 text-base font-bold cursor-pointer">
+              &times;
+            </button>
+          </div>
+        `;
+      }).join('');
     }
 
-    function updateLegField(idx, field, value) {
+    // 當隊長在選單揀選不同比賽
+    function handleLegDropdownChange(idx, combinedValue) {
+      const [label, countStr] = combinedValue.split('|');
       if (editingLegs[idx]) {
-        editingLegs[idx][field] = value;
+        editingLegs[idx].name = `Leg ${idx + 1}: ${label}`;
+        editingLegs[idx].count = parseInt(countStr) || 1;
+        document.getElementById('presetSelect').value = 'custom';
+        renderLegsEditor();
       }
     }
 
     function addNewLegRow() {
       editingLegs.push({
-        name: `Leg ${editingLegs.length + 1}: 自訂比賽`,
-        count: 1
+        name: `Leg ${editingLegs.length + 1}: 雙打 501`,
+        count: 2
       });
+      document.getElementById('presetSelect').value = 'custom';
       renderLegsEditor();
     }
 
     function removeLegRow(idx) {
       if (editingLegs.length <= 1) return alert('賽制至少需有 1 場比賽！');
       editingLegs.splice(idx, 1);
+      // 重新編號名稱
+      editingLegs.forEach((leg, i) => {
+        const clean = leg.name.replace(/^Leg\s*\d+\s*:\s*/i, '').trim();
+        leg.name = `Leg ${i + 1}: ${clean}`;
+      });
+      document.getElementById('presetSelect').value = 'custom';
       renderLegsEditor();
     }
 
@@ -575,14 +655,21 @@
       btn.innerText = '儲存中...';
       btn.disabled = true;
 
+      // 儲存前確保名稱都包含正確的 Leg X: 前綴
+      const finalized = editingLegs.map((l, idx) => ({
+        name: l.name.startsWith('Leg') ? l.name : `Leg ${idx + 1}: ${l.name}`,
+        count: l.count
+      }));
+
       const res = await apiRequest('POST', {
         action: 'saveLegFormat',
-        legFormat: editingLegs
+        legFormat: finalized
       });
 
       btn.innerText = '💾 儲存並套用賽制';
       btn.disabled = false;
       alert(res.message || '賽制已更新！');
+      loadMatches();
     }
 
     /* ----------------------------------------------------
@@ -602,7 +689,7 @@
       const legFormat = res.legFormat || [];
       const atts = res.attendanceList || [];
 
-      document.getElementById('modalLegCountTag').innerText = `(共 ${legFormat.length} 場)`;
+      document.getElementById('modalLegCountTag').innerText = `(全 ${legFormat.length} 場)`;
 
       if (captainLineup.length === 0) {
         document.getElementById('modalLineupList').innerHTML = '<p class="text-slate-400 text-center py-2">隊長尚未提交對賽出戰排陣。</p>';
@@ -669,7 +756,7 @@
         for (let i = 0; i < leg.count; i++) {
           const selectedPid = assigned[i] || '';
           selects += `
-            <select data-leg="${legIdx}" data-slot="${i}" class="lineup-select w-full p-2 rounded bg-slate-700 text-xs border border-slate-600 mb-1.5 focus:border-yellow-400">
+            <select data-leg="${legIdx}" data-slot="${i}" class="lineup-select w-full p-2.5 rounded bg-slate-700 text-xs border border-slate-600 mb-1.5 focus:border-yellow-400">
               <option value="">-- 出戰隊員 ${i + 1} --</option>
               ${currentAvailablePlayers.map(p => `
                 <option value="${p.userId}" ${String(p.userId) === String(selectedPid) ? 'selected' : ''}>
@@ -681,7 +768,7 @@
         }
         return `
           <div class="bg-slate-700/40 p-2.5 rounded-xl border border-slate-600/60">
-            <label class="block font-bold text-yellow-400 mb-1">${leg.name} (${leg.count} 人賽)</label>
+            <label class="block font-bold text-yellow-400 mb-1.5">${leg.name} (${leg.count} 人出戰)</label>
             ${selects}
           </div>
         `;
