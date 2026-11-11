@@ -476,8 +476,8 @@
       document.getElementById('registerFields').classList.toggle('hidden', !isRegisterMode);
     }
 
-    async function handleAuthAction() {
-      const email = document.getElementById('email').value.trim();
+   async function handleAuthAction() {
+      const email = document.getElementById('email').value.trim().toLowerCase();
       const password = document.getElementById('password').value.trim();
       if (!email || !password) return alert('請輸入電郵及密碼');
 
@@ -491,10 +491,19 @@
           submitBtn.innerText = '提交註冊';
           return alert('請輸入姓名');
         }
+
         const res = await apiRequest('POST', { action: 'register', email, password, name, rating });
         submitBtn.innerText = '提交註冊';
-        alert(res.message || '註冊已送出');
-        if (res.success) toggleAuthMode();
+
+        if (res.success) {
+          alert(res.message || '註冊成功！請等待隊長啟用帳號。');
+          // 清空欄位並切換回登入模式
+          document.getElementById('password').value = '';
+          toggleAuthMode();
+        } else {
+          // 攔截重複註冊並提示
+          alert('⚠️ 註冊失敗：' + (res.message || '此電郵已被使用'));
+        }
       } else {
         const res = await apiRequest('POST', { action: 'login', email, password });
         submitBtn.innerText = '登入';
