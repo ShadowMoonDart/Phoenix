@@ -74,34 +74,59 @@
     <section id="tab-admin" class="hidden space-y-4">
       <h2 class="text-sm font-bold text-yellow-400">隊長專屬後台</h2>
 
-      <!-- 一鍵同步按鈕（已預先綁定你的隊伍網址，唔使打字） -->
+      <!-- 手動新增賽事面板 -->
       <div class="bg-slate-800 p-4 rounded-xl border border-yellow-500/50 space-y-3 shadow-lg">
-        <div class="flex justify-between items-center">
-          <h3 class="text-xs font-bold text-yellow-400">🎯 一鍵同步隊伍賽程 (免打字)</h3>
-          <span class="text-[10px] bg-rose-600 px-2 py-0.5 rounded font-bold">隊伍 ID: 208469</span>
+        <h3 class="text-xs font-bold text-yellow-400 flex items-center gap-1">
+          <span>➕</span> 新增單場賽程
+        </h3>
+        <div class="grid grid-cols-2 gap-2 text-xs">
+          <div>
+            <label class="text-[11px] text-slate-400 block mb-0.5">輪次 (Round)</label>
+            <input type="text" id="newRound" placeholder="例如: 1" class="w-full p-2 rounded bg-slate-700 border border-slate-600 text-slate-200">
+          </div>
+          <div>
+            <label class="text-[11px] text-slate-400 block mb-0.5">比賽日期 / 時間</label>
+            <input type="text" id="newDate" placeholder="例如: 2026-03-25" class="w-full p-2 rounded bg-slate-700 border border-slate-600 text-slate-200">
+          </div>
+          <div>
+            <label class="text-[11px] text-slate-400 block mb-0.5">對手隊伍名稱</label>
+            <input type="text" id="newOpponent" placeholder="例如: Bullseye Team" class="w-full p-2 rounded bg-slate-700 border border-slate-600 text-slate-200">
+          </div>
+          <div>
+            <label class="text-[11px] text-slate-400 block mb-0.5">主客場</label>
+            <select id="newIsHome" class="w-full p-2 rounded bg-slate-700 border border-slate-600 text-slate-200">
+              <option value="true">主場 (Home)</option>
+              <option value="false">客場 (Away)</option>
+            </select>
+          </div>
         </div>
-        
         <div>
-          <label class="text-[11px] text-slate-400 block mb-1">目標網址（已自動填好你所提供的官方網址）：</label>
-          <input type="text" id="targetUrl" value="https://play.phoenixdarts.com/selectMatchListML.do?cpttnId=97460&sortType1=1&searchGubunSort=1&searchTeam=208469&searchDivision=94550&searchStage=145505&searchGubun=1&searchGubunNm" class="w-full p-2.5 rounded bg-slate-700 border border-slate-600 text-xs font-mono text-slate-200">
+          <label class="text-[11px] text-slate-400 block mb-0.5">比賽地點 (鏢吧名稱 / 地址)</label>
+          <input type="text" id="newVenue" placeholder="例如: i Darts Club" class="w-full p-2 rounded bg-slate-700 border border-slate-600 text-xs text-slate-200">
         </div>
-
-        <button type="button" onclick="triggerAutoSync()" id="syncBtnAction" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold p-3 rounded-xl text-xs transition shadow-lg flex justify-center items-center gap-2 cursor-pointer">
-          <span class="text-base">🚀</span>
-          <span>直接撳我：一鍵自動抓取並更新全季賽程</span>
+        <button type="button" onclick="submitNewMatch()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold p-2.5 rounded text-xs transition cursor-pointer">
+          確認新增賽事
         </button>
       </div>
 
+      <!-- 快速貼上教學說明 -->
+      <div class="bg-slate-800 p-3.5 rounded-xl border border-slate-700 text-xs text-slate-300 space-y-1.5 shadow">
+        <p class="font-bold text-yellow-400">💡 批量加入全季賽事極速方法：</p>
+        <p class="text-[11px] text-slate-400 leading-relaxed">
+          若要一次過入全季十幾場：直接用電腦在官網賽程表格按複製 (Ctrl+C)，然後打開你的 <b>Google Sheet (Matches 分頁)</b> 第一個空白列按貼上 (Ctrl+V)，表格會自動分行分格，重新整理本頁面即刻全部載入！
+        </p>
+      </div>
+
       <!-- 待審批會員 -->
-      <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
-        <h3 class="text-xs font-bold mb-2">待審批會員啟用</h3>
+      <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 shadow">
+        <h3 class="text-xs font-bold mb-2 text-slate-200">待審批會員啟用</h3>
         <div id="pendingUsersList" class="space-y-2 text-xs"></div>
       </div>
     </section>
 
   </div>
 
-  <!-- Modal 1：查看 9 場陣容 -->
+  <!-- Modal 1：查看 9 場陣容 & 簽到名單 -->
   <div id="detailModal" class="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 hidden">
     <div class="bg-slate-800 rounded-2xl max-w-lg w-full max-h-[85vh] flex flex-col border border-slate-700 shadow-2xl">
       <div class="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-900/40">
@@ -225,6 +250,7 @@
         targetBtn.classList.remove('border-transparent');
       }
       if (tabId === 'stats') loadStats();
+      if (tabId === 'admin') loadAdminData();
     }
 
     function toggleAuthMode() {
@@ -276,27 +302,6 @@
       loadMatches();
     }
 
-    // 核心觸發：直接帶網址一鍵同步
-    async function triggerAutoSync() {
-      const url = document.getElementById('targetUrl').value.trim();
-      const btn = document.getElementById('syncBtnAction');
-      btn.disabled = true;
-      btn.innerHTML = `<span>⏳ 正在連線 Phoenix 官方抓取賽程...</span>`;
-
-      const res = await apiRequest('GET', { action: 'autoSync', url: encodeURIComponent(url) });
-
-      btn.disabled = false;
-      btn.innerHTML = `<span class="text-base">🚀</span><span>直接撳我：一鍵自動抓取並更新全季賽程</span>`;
-
-      if (res.success) {
-        alert(res.message || `成功抓取 ${res.count} 場賽事！`);
-        loadMatches();
-        switchTab('matches');
-      } else {
-        alert('抓取失敗: ' + (res.message || res.error || '連線逾時'));
-      }
-    }
-
     // 載入賽程列表
     async function loadMatches() {
       const container = document.getElementById('matchesContainer');
@@ -307,17 +312,17 @@
       const setRes = await apiRequest('GET', { action: 'getSettings' });
 
       if (setRes.success && setRes.settings) {
-        if (badge) badge.innerText = `我隊：${setRes.settings.teamName || '已同步賽程'}`;
+        if (badge) badge.innerText = `我隊：${setRes.settings.teamName || '我的飛鏢隊'}`;
       }
 
       if (!json.success || !json.matches || json.matches.length === 0) {
         if (container) {
           container.innerHTML = `
             <div class="text-center py-8 bg-slate-800 rounded-xl border border-slate-700">
-              <p class="text-slate-400 text-xs mb-3">目前內部尚無賽事紀錄</p>
+              <p class="text-slate-400 text-xs mb-3">目前尚無賽事紀錄</p>
               ${currentUser && currentUser.role === 'admin' ? `
-                <button onclick="switchTab('admin')" class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded font-bold cursor-pointer">前往隊長管理一鍵抓取賽程</button>
-              ` : '<p class="text-[11px] text-slate-500">請等待隊長在後台同步最新賽程</p>'}
+                <button onclick="switchTab('admin')" class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded font-bold cursor-pointer">前往後台新增賽事</button>
+              ` : '<p class="text-[11px] text-slate-500">請等待隊長新增賽程</p>'}
             </div>
           `;
         }
@@ -327,21 +332,21 @@
       const isAdmin = currentUser && currentUser.role === 'admin';
 
       container.innerHTML = json.matches.map(m => {
-        const isFinished = m.score && (m.score.includes('-') || m.score.includes(':') || /\d+\s*\/\s*\d+/.test(m.score));
+        const isFinished = m.score && String(m.score).trim() !== '';
         return `
           <div class="bg-slate-800 p-4 rounded-xl border ${isFinished ? 'border-slate-700/60' : 'border-slate-700'} space-y-2.5 shadow">
             <div class="flex justify-between items-center">
               <div class="flex items-center gap-1.5">
                 <span class="text-[10px] bg-slate-700 text-slate-300 px-2 py-0.5 rounded font-mono font-bold">第 ${m.round || '-'} 輪</span>
                 <span class="text-[10px] ${m.isHome ? 'bg-rose-600' : 'bg-blue-600'} px-2 py-0.5 rounded font-bold">${m.isHome ? '主場' : '客場'}</span>
-                ${isFinished ? `<span class="text-[10px] bg-emerald-600 px-2 py-0.5 rounded font-bold">已完賽 ${m.score}</span>` : '<span class="text-[10px] bg-amber-600 px-2 py-0.5 rounded font-bold">未完賽</span>'}
+                ${isFinished ? `<span class="text-[10px] bg-emerald-600 px-2 py-0.5 rounded font-bold">完賽 ${m.score}</span>` : '<span class="text-[10px] bg-amber-600 px-2 py-0.5 rounded font-bold">未完賽</span>'}
               </div>
               <span class="text-xs text-slate-400">${m.date || ''}</span>
             </div>
 
             <div class="flex justify-between items-center">
               <h3 class="font-bold text-base text-white">VS ${m.opponent}</h3>
-              ${isFinished ? `<span class="text-yellow-400 font-black text-sm bg-slate-900 px-2 py-0.5 rounded">${m.score}</span>` : ''}
+              ${isFinished ? `<span class="text-yellow-400 font-black text-sm bg-slate-900 px-2.5 py-0.5 rounded border border-yellow-500/30">${m.score}</span>` : ''}
             </div>
             <p class="text-xs text-slate-300">📍 地點: ${m.venue || '官方指定鏢吧'}</p>
 
@@ -350,25 +355,76 @@
               <span class="text-amber-400 font-semibold">遲到: ${m.counts ? m.counts.late : 0}</span>
               <span class="text-rose-400 font-semibold">缺席: ${m.counts ? m.counts.absent : 0}</span>
               <button onclick="viewMatchDetails('${m.id}', '${m.opponent}', '${m.venue}', '${m.score || ''}')" class="ml-auto text-rose-400 hover:text-rose-300 underline font-medium cursor-pointer">
-                查看簽到/排陣 ↗
+                查看名單/排陣 ↗
               </button>
             </div>
 
-            ${!isFinished ? `
-              <div class="grid grid-cols-3 gap-2 pt-1 border-t border-slate-700/60">
-                <button onclick="submitAttendance('${m.id}', 'attending')" class="bg-emerald-600 hover:bg-emerald-500 py-1.5 rounded text-xs font-semibold cursor-pointer">出席 👍</button>
-                <button onclick="submitAttendance('${m.id}', 'late')" class="bg-amber-600 hover:bg-amber-500 py-1.5 rounded text-xs font-semibold cursor-pointer">遲到 ⏰</button>
-                <button onclick="submitAttendance('${m.id}', 'absent')" class="bg-rose-600 hover:bg-rose-500 py-1.5 rounded text-xs font-semibold cursor-pointer">缺席 ❌</button>
-              </div>
-              ${isAdmin ? `
-                <div class="pt-1">
-                  <button onclick="openLineupModal('${m.id}', '${m.opponent}')" class="w-full bg-yellow-500 hover:bg-yellow-400 text-slate-900 font-bold py-1.5 rounded text-xs cursor-pointer">🎯 隊長 9 場排陣 (限出席隊友)</button>
+            <!-- 隊員簽到按鈕 -->
+            <div class="grid grid-cols-3 gap-2 pt-1 border-t border-slate-700/60">
+              <button onclick="submitAttendance('${m.id}', 'attending')" class="bg-emerald-600 hover:bg-emerald-500 py-1.5 rounded text-xs font-semibold cursor-pointer">出席 👍</button>
+              <button onclick="submitAttendance('${m.id}', 'late')" class="bg-amber-600 hover:bg-amber-500 py-1.5 rounded text-xs font-semibold cursor-pointer">遲到 ⏰</button>
+              <button onclick="submitAttendance('${m.id}', 'absent')" class="bg-rose-600 hover:bg-rose-500 py-1.5 rounded text-xs font-semibold cursor-pointer">缺席 ❌</button>
+            </div>
+
+            <!-- 隊長專用操作按鈕 -->
+            ${isAdmin ? `
+              <div class="pt-1.5 border-t border-slate-700/40 space-y-2">
+                <button onclick="openLineupModal('${m.id}', '${m.opponent}')" class="w-full bg-yellow-500 hover:bg-yellow-400 text-slate-900 font-bold py-1.5 rounded text-xs cursor-pointer">🎯 隊長 9 場排陣 (限出席隊友)</button>
+                <div class="flex gap-2">
+                  <button onclick="promptUpdateScore('${m.id}', '${m.score || ''}')" class="flex-1 bg-slate-700 hover:bg-slate-600 text-yellow-300 py-1.5 rounded text-xs font-semibold cursor-pointer">
+                    ✏️ ${isFinished ? '修改比分' : '輸入比分 (完賽)'}
+                  </button>
+                  <button onclick="deleteMatch('${m.id}')" title="刪除此場賽事" class="bg-rose-900/60 hover:bg-rose-800 text-rose-300 px-3 py-1.5 rounded text-xs cursor-pointer">
+                    🗑️ 刪除
+                  </button>
                 </div>
-              ` : ''}
+              </div>
             ` : ''}
           </div>
         `;
       }).join('');
+    }
+
+    // 隊長手動新增賽事
+    async function submitNewMatch() {
+      const round = document.getElementById('newRound').value.trim();
+      const date = document.getElementById('newDate').value.trim();
+      const opponent = document.getElementById('newOpponent').value.trim();
+      const isHome = document.getElementById('newIsHome').value === 'true';
+      const venue = document.getElementById('newVenue').value.trim();
+
+      if (!opponent || !date) {
+        return alert('請至少填寫「比賽日期」及「對手隊名」！');
+      }
+
+      const res = await apiRequest('POST', {
+        action: 'addMatch',
+        round, date, opponent, isHome, venue
+      });
+
+      alert(res.message || '新增成功！');
+      document.getElementById('newOpponent').value = '';
+      document.getElementById('newVenue').value = '';
+      document.getElementById('newRound').value = '';
+      loadMatches();
+      switchTab('matches');
+    }
+
+    // 隊長修改/輸入比分
+    async function promptUpdateScore(matchId, currentScore) {
+      const score = prompt('請輸入比賽最終比分（例如: 5-4、2-7）：', currentScore || '');
+      if (score === null) return;
+      const res = await apiRequest('POST', { action: 'updateScore', matchId, score: score.trim() });
+      alert(res.message || '比分已更新！');
+      loadMatches();
+    }
+
+    // 隊長刪除賽事
+    async function deleteMatch(matchId) {
+      if (!confirm('確定要刪除這場賽事嗎？此動作無法復原！')) return;
+      const res = await apiRequest('POST', { action: 'deleteMatch', matchId });
+      alert(res.message || '已刪除！');
+      loadMatches();
     }
 
     async function submitAttendance(matchId, status) {
