@@ -74,33 +74,29 @@
     <section id="tab-admin" class="hidden space-y-4">
       <h2 class="text-sm font-bold text-yellow-400">隊長專屬後台</h2>
 
-      <!-- 極速智能解析區 -->
       <div class="bg-slate-800 p-4 rounded-xl border border-yellow-500/50 space-y-3 shadow-lg">
         <div class="flex justify-between items-center">
-          <h3 class="text-xs font-bold text-yellow-400">⚡ 100% 成功：Phoenix 賽程極速匯入</h3>
-          <a href="https://play.phoenixdarts.com/selectMatchListML.do?cpttnId=97460" target="_blank" class="text-[11px] text-rose-400 underline">打開官網賽程 ↗</a>
+          <h3 class="text-xs font-bold text-yellow-400">🌐 即時線上讀取 Phoenix 賽程網頁</h3>
+          <a href="https://play.phoenixdarts.com/selectMatchListML.do?cpttnId=97460" target="_blank" class="text-[11px] text-rose-400 underline">官網賽程 ↗</a>
         </div>
-        <p class="text-[11px] text-slate-300 leading-relaxed">
-          <b>三秒搞掂教學：</b><br>
-          1. 點上方連結到官網查閱你隊伍的賽程頁面。<br>
-          2. 在該網頁按 <kbd class="bg-slate-700 px-1 rounded">Ctrl+A</kbd> 全選並複製整頁。<br>
-          3. 貼入下方文字框，系統會自動辨識隊伍及所有賽程！
-        </p>
+        <p class="text-[11px] text-slate-300">貼上你在 Phoenix 官網查閱該隊伍賽程時的網址，系統會即時下載網頁並加入賽事：</p>
 
         <div>
-          <label class="text-[11px] text-slate-400 block mb-1">我的隊名（選填，留空則自動猜測）：</label>
-          <input type="text" id="manualTeamName" placeholder="例如：Target Bulls" class="w-full p-2 rounded bg-slate-700 border border-slate-600 text-xs text-white">
+          <label class="text-[11px] text-slate-400 block mb-1">Phoenix 賽事網址：</label>
+          <input type="text" id="liveUrlInput" value="https://play.phoenixdarts.com/selectMatchListML.do?cpttnId=97460" class="w-full p-2.5 rounded bg-slate-700 border border-slate-600 text-xs font-mono text-white focus:border-yellow-400">
         </div>
 
         <div>
-          <label class="text-[11px] text-slate-400 block mb-1">貼上賽程文字 / 網頁內容：</label>
-          <textarea id="rawContentInput" rows="5" placeholder="在此處直接貼上 (Ctrl+V) 複製的官網內容..." class="w-full p-2.5 rounded bg-slate-700 border border-slate-600 text-xs text-slate-200 font-mono"></textarea>
+          <label class="text-[11px] text-slate-400 block mb-1">我隊名稱（可留空自動判定）：</label>
+          <input type="text" id="targetTeamName" placeholder="例如隊名關鍵字，留空系統會自動分析" class="w-full p-2 rounded bg-slate-700 border border-slate-600 text-xs text-white">
         </div>
 
-        <button type="button" onclick="parseAndUploadMatches()" id="importBtn" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold p-3 rounded-xl text-xs transition shadow-lg flex justify-center items-center gap-2 cursor-pointer">
-          <span class="text-base">🚀</span>
-          <span>即時解析並發佈賽程</span>
+        <button type="button" onclick="fetchAndImportFromWeb()" id="liveFetchBtn" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold p-3 rounded-xl text-xs transition shadow-lg flex justify-center items-center gap-2 cursor-pointer">
+          <span class="text-base">⚡</span>
+          <span>即時線上讀取並加入賽程</span>
         </button>
+
+        <div id="liveStatusBox" class="hidden p-2 rounded bg-slate-900 text-[11px] text-slate-300 border border-slate-700"></div>
       </div>
 
       <!-- 待審批會員 -->
@@ -287,110 +283,128 @@
       loadMatches();
     }
 
-    // 核心強大功能：極速解析貼上的賽程
-    async function parseAndUploadMatches() {
-      const raw = document.getElementById('rawContentInput').value;
-      let manualTeam = document.getElementById('manualTeamName').value.trim();
-      if (!raw.trim()) return alert('請先貼上官網賽程文字！');
+    // 核心亮點：直接從使用者前端連線即時抓取網頁內容並解析入庫
+    async function fetchAndImportFromWeb() {
+      const url = document.getElementById('liveUrlInput').value.trim();
+      let myTeam = document.getElementById('targetTeamName').value.trim();
+      const btn = document.getElementById('liveFetchBtn');
+      const statusBox = document.getElementById('liveStatusBox');
 
-      const btn = document.getElementById('importBtn');
+      if (!url) return alert('請輸入賽程網址！');
+
       btn.disabled = true;
-      btn.innerText = '⏳ 正在智能分析賽程...';
+      btn.innerHTML = `<span>⏳ 正在連線下載 Phoenix 網頁...</span>`;
+      statusBox.classList.remove('hidden');
+      statusBox.innerText = "連線中：正在透過前端即時讀取賽程網頁內容...";
 
-      const lines = raw.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-      let parsed = [];
-
-      // 智能比對正則：抓取包含 日期、主隊、比分、客隊、地點的行
-      for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
-        // 尋找日期格式 (例如 2024.11.12 或 11/12)
-        const dateMatch = line.match(/\b(\d{4}[\/\.-]\d{1,2}[\/\.-]\d{1,2}|\d{1,2}[\/\.-]\d{1,2})\b/);
-        
-        if (dateMatch) {
-          let date = dateMatch[0];
-          let round = (line.match(/\b\d{1,2}\b/) || [parsed.length + 1])[0];
-          
-          // 如果是以 Tab 或多空格隔開的標準表格行
-          let parts = line.split(/\t+|\s{2,}/).map(p => p.trim());
-          if (parts.length >= 4) {
-            let home = parts[1] || '';
-            let score = parts[2] || '';
-            let away = parts[3] || '';
-            let venue = parts[4] || '官方指定鏢吧';
-
-            if (home && away) {
-              parsed.push({ round, date, home, score, away, venue });
-              continue;
-            }
-          }
-
-          // 如果是一整塊連續文字（從瀏覽器整頁複製）
-          let context = lines.slice(Math.max(0, i - 2), Math.min(lines.length, i + 6));
-          let possibleTeams = context.filter(c => c.length > 1 && !/\d{4}[\/\.-]/.test(c) && !/VS|vs|主場|客場|Match|Round/i.test(c));
-          if (possibleTeams.length >= 2) {
-            parsed.push({
-              round: String(parsed.length + 1),
-              date: date,
-              home: possibleTeams[0],
-              score: context.find(c => /^\d+\s*[-:]\s*\d+$/.test(c)) || '',
-              away: possibleTeams[1],
-              venue: '官方指定鏢吧'
-            });
-            i += 2; // 跳過已讀取的區塊
-          }
+      let html = "";
+      try {
+        // 使用高效代理管道避開 CORS 限制，取得完整 Phoenix 頁面內容
+        const proxyUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent(url);
+        const res = await fetch(proxyUrl);
+        html = await res.text();
+      } catch (err) {
+        try {
+          // 備援代理管道
+          const res = await fetch("https://corsproxy.io/?" + encodeURIComponent(url));
+          html = await res.text();
+        } catch (e) {
+          btn.disabled = false;
+          btn.innerHTML = `<span class="text-base">⚡</span><span>即時線上讀取並加入賽程</span>`;
+          statusBox.innerText = "連線失敗，請確認網絡或網址有效性。";
+          return alert('無法即時連線至該網址，請確認網絡連接！');
         }
       }
 
-      if (parsed.length === 0) {
+      statusBox.innerText = "下載成功！正在分析頁面內的隊伍與賽事表格...";
+
+      // 在瀏覽器端解析 HTML 表格
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+      const tableRows = doc.querySelectorAll('tr');
+
+      let parsedMatches = [];
+      tableRows.forEach(tr => {
+        const cells = Array.from(tr.querySelectorAll('td')).map(td => td.innerText.replace(/\s+/g, ' ').trim());
+        const hasDate = cells.some(c => /\d{4}[\/\.-]\d{1,2}[\/\.-]\d{1,2}|\d{1,2}[\/\.-]\d{1,2}/.test(c));
+
+        if (cells.length >= 4 && hasDate) {
+          let round = '', date = '', home = '', score = '', away = '', venue = '官方指定鏢吧';
+          if (cells.length === 4) {
+            date = cells[0]; home = cells[1]; score = cells[2]; away = cells[3];
+          } else if (cells.length === 5) {
+            if (/^\d+$/.test(cells[0])) {
+              round = cells[0]; date = cells[1]; home = cells[2]; score = cells[3]; away = cells[4];
+            } else {
+              date = cells[0]; home = cells[1]; score = cells[2]; away = cells[3]; venue = cells[4];
+            }
+          } else if (cells.length >= 6) {
+            round = cells[0]; date = cells[1]; home = cells[2]; score = cells[3]; away = cells[4]; venue = cells[5];
+          }
+
+          if (home && home.toLowerCase() !== 'home' && home !== '主隊') {
+            parsedMatches.push({
+              round: round || String(parsedMatches.length + 1),
+              date, home, score, away, venue
+            });
+          }
+        }
+      });
+
+      if (parsedMatches.length === 0) {
         btn.disabled = false;
-        btn.innerHTML = `<span class="text-base">🚀</span><span>即時解析並發佈賽程</span>`;
-        return alert('未能辨識賽程，請確認貼上的文字包含「比賽日期」及「隊伍名稱」！');
+        btn.innerHTML = `<span class="text-base">⚡</span><span>即時線上讀取並加入賽程</span>`;
+        statusBox.innerText = "未能找到賽程。可能是該網址尚未選定隊伍，或該組別賽程尚未公開。";
+        return alert('未能於該網頁找到賽程，請確認此網址已載入賽程表格！');
       }
 
-      // 自動推測隊名
-      if (!manualTeam) {
+      // 自動推測隊伍名稱
+      if (!myTeam) {
         let counts = {};
-        parsed.forEach(p => {
-          counts[p.home] = (counts[p.home] || 0) + 1;
-          counts[p.away] = (counts[p.away] || 0) + 1;
+        parsedMatches.forEach(m => {
+          counts[m.home] = (counts[m.home] || 0) + 1;
+          counts[m.away] = (counts[m.away] || 0) + 1;
         });
         let max = 0;
         for (let t in counts) {
-          if (counts[t] > max) { max = counts[t]; manualTeam = t; }
+          if (counts[t] > max) { max = counts[t]; myTeam = t; }
         }
       }
 
-      // 轉換成 Matches 表格標準格式
-      const finalMatches = parsed.map(p => {
-        const isHome = manualTeam ? p.home.includes(manualTeam) : true;
-        const opponent = isHome ? p.away : p.home;
+      statusBox.innerText = `辨識完成：鎖定隊伍【${myTeam}】，找到 ${parsedMatches.length} 場賽事，正在同步至試算表...`;
+
+      // 轉換成系統格式
+      const finalMatches = parsedMatches.map(m => {
+        const isHome = myTeam ? m.home.includes(myTeam) : true;
+        const opponent = isHome ? m.away : m.home;
         return {
-          round: p.round,
-          date: p.date,
+          round: m.round,
+          date: m.date,
           opponent: opponent,
-          venue: p.venue,
+          venue: m.venue,
           isHome: isHome,
-          score: p.score
+          score: m.score
         };
       });
 
-      // 寫入 Google Apps Script
-      const res = await apiRequest('POST', {
-        action: 'saveImportedMatches',
+      // 寫入 Google 試算表
+      const saveRes = await apiRequest('POST', {
+        action: 'saveMatchesDirect',
         matches: finalMatches,
-        myTeamName: manualTeam
+        teamName: myTeam
       });
 
       btn.disabled = false;
-      btn.innerHTML = `<span class="text-base">🚀</span><span>即時解析並發佈賽程</span>`;
+      btn.innerHTML = `<span class="text-base">⚡</span><span>即時線上讀取並加入賽程</span>`;
 
-      if (res.success) {
-        alert(`🎉 成功解析並同步【${manualTeam}】共 ${res.count} 場賽程！`);
-        document.getElementById('rawContentInput').value = '';
+      if (saveRes.success) {
+        statusBox.innerText = `✅ 完成！成功即時加入【${myTeam}】共 ${saveRes.count} 場賽程！`;
+        alert(`🎉 成功即時讀取並加入 ${saveRes.count} 場賽事！`);
         loadMatches();
         switchTab('matches');
       } else {
-        alert('儲存失敗: ' + (res.message || res.error));
+        statusBox.innerText = "儲存失敗：" + saveRes.message;
+        alert('儲存失敗：' + saveRes.message);
       }
     }
 
