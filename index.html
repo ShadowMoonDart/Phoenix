@@ -73,7 +73,7 @@
       </div>
     </section>
 
-    <!-- 2. 出席率與戰力統計分頁 (PHOENIX Scale & 局勝率) -->
+    <!-- 2. 出席率與戰力統計分頁 -->
     <section id="tab-stats" class="hidden space-y-4">
       <div class="flex justify-between items-center">
         <h2 class="text-sm font-bold text-slate-300 flex items-center gap-2">
@@ -257,7 +257,7 @@
     </div>
   </div>
 
-  <!-- Modal 2：隊長排陣 Modal -->
+  <!-- Modal 2：隊長排陣 Modal (包含 AI 排陣 & AI 利弊診斷) -->
   <div id="lineupModal" class="fixed inset-0 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
     <div class="bg-slate-900 rounded-3xl max-w-lg w-full max-h-[92vh] flex flex-col border border-yellow-500/50 shadow-2xl">
       <div class="p-4 border-b border-slate-800 bg-gradient-to-r from-yellow-500/10 to-transparent">
@@ -271,18 +271,37 @@
           <button onclick="closeModal('lineupModal')" class="w-8 h-8 rounded-full bg-slate-800 text-slate-300 hover:bg-slate-700 flex items-center justify-center font-bold text-base cursor-pointer">&times;</button>
         </div>
 
-        <div class="mt-3 bg-gradient-to-r from-indigo-900/40 via-purple-900/30 to-slate-900 p-2.5 rounded-2xl border border-indigo-500/40 flex justify-between items-center">
-          <div>
-            <p class="text-xs font-black text-indigo-300 flex items-center gap-1">
-              <span>🧠</span> AI 專項數據智能排陣 (01 / Cricket)
-            </p>
-            <p class="text-[10px] text-slate-400">依據 Phoenix 專項換算 PPD 及 MPR 自動最佳化</p>
+        <!-- AI 工具列：一鍵排陣 + 利弊診斷 -->
+        <div class="mt-3 bg-gradient-to-r from-indigo-900/40 via-purple-900/30 to-slate-900 p-2.5 rounded-2xl border border-indigo-500/40 space-y-2">
+          <div class="flex justify-between items-center">
+            <div>
+              <p class="text-xs font-black text-indigo-300 flex items-center gap-1">
+                <span>🧠</span> AI 陣容戰術運算中心
+              </p>
+              <p class="text-[10px] text-slate-400">結合 Phoenix 官方 PPD / MPR 深度分析</p>
+            </div>
+            <div class="flex gap-1.5">
+              <button type="button" onclick="triggerAiLineupSuggestion()" class="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold px-2.5 py-1.5 rounded-xl text-xs transition shadow cursor-pointer">
+                ✨ 一鍵排陣
+              </button>
+              <button type="button" onclick="analyzeCurrentLineupProsCons()" class="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold px-2.5 py-1.5 rounded-xl text-xs transition shadow cursor-pointer">
+                🔍 診斷利弊
+              </button>
+            </div>
           </div>
-          <button type="button" onclick="triggerAiLineupSuggestion()" class="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold px-3 py-1.5 rounded-xl text-xs transition shadow cursor-pointer">
-            ✨ 一鍵 AI 排陣
-          </button>
+          <div id="aiReasoningBadge" class="hidden text-[11px] text-emerald-400 bg-emerald-950/60 p-2 rounded-xl border border-emerald-800"></div>
         </div>
-        <div id="aiReasoningBadge" class="hidden mt-1.5 text-[11px] text-emerald-400 bg-emerald-950/60 p-1.5 rounded-lg border border-emerald-800"></div>
+      </div>
+
+      <!-- AI 利弊分析結果面板 (可展開收起) -->
+      <div id="aiAnalysisPanel" class="hidden mx-4 mt-3 p-3.5 bg-slate-950 rounded-2xl border border-teal-500/40 space-y-3 text-xs overflow-y-auto max-h-56 shadow-inner">
+        <div class="flex justify-between items-center border-b border-slate-800 pb-1.5">
+          <h4 class="font-black text-teal-300 flex items-center gap-1.5">
+            <span>📊</span> AI 陣容利弊深度診斷報告
+          </h4>
+          <span id="aiRatingScoreBadge" class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-teal-950 text-teal-300 border border-teal-800 font-bold">綜合戰力指數: 92/100</span>
+        </div>
+        <div class="space-y-2" id="aiAnalysisContent"></div>
       </div>
 
       <div class="p-4 overflow-y-auto space-y-3 text-xs" id="lineupLegsContainer"></div>
@@ -966,7 +985,9 @@
       currentLineupMatchId = matchId;
       const container = document.getElementById('lineupLegsContainer');
       const reasonBadge = document.getElementById('aiReasoningBadge');
+      const analysisPanel = document.getElementById('aiAnalysisPanel');
       if (reasonBadge) reasonBadge.classList.add('hidden');
+      if (analysisPanel) analysisPanel.classList.add('hidden');
 
       container.innerHTML = '<p class="text-center text-slate-400 py-6">載入最新賽制與戰力評估中...</p>';
       document.getElementById('lineupModal').classList.remove('hidden');
@@ -1094,9 +1115,170 @@
       if (reasonBadge) {
         reasonBadge.classList.remove('hidden');
         reasonBadge.innerHTML = `
-          <span>🧠 <b>AI 專項推算完成：</b>男單、女單、雙打 (3盤2勝) 優先指派 Phoenix 高階雙修戰力；陣容平衡已調整。</span>
+          <span>🧠 <b>AI 專項推算完成：</b>已自動排陣！點擊上方「🔍 診斷利弊」可即時查閱陣容強弱分析報告。</span>
         `;
       }
+    }
+
+    /* ----------------------------------------------------
+       【全新功能】AI 陣容利弊深度診斷分析
+    ---------------------------------------------------- */
+    function analyzeCurrentLineupProsCons() {
+      const panel = document.getElementById('aiAnalysisPanel');
+      const content = document.getElementById('aiAnalysisContent');
+      const scoreBadge = document.getElementById('aiRatingScoreBadge');
+
+      // 1. 抓取當前排陣所有選取的隊員
+      const currentLineupState = [];
+      let totalAssignedSlots = 0;
+      let totalSlotsNeeded = 0;
+      const playerAppearance = {};
+      currentAvailablePlayers.forEach(p => { playerAppearance[p.userId] = 0; });
+
+      currentLegFormat.forEach((leg, legIdx) => {
+        currentLineupState[legIdx] = [];
+        totalSlotsNeeded += leg.count;
+        for (let i = 0; i < leg.count; i++) {
+          const sel = document.querySelector(`.lineup-select[data-leg="${legIdx}"][data-slot="${i}"]`);
+          const pid = sel ? sel.value : '';
+          if (pid) {
+            currentLineupState[legIdx].push(pid);
+            playerAppearance[pid] = (playerAppearance[pid] || 0) + 1;
+            totalAssignedSlots++;
+          }
+        }
+      });
+
+      if (totalAssignedSlots === 0) {
+        return alert('⚠️ 目前尚未指派任何出賽隊員，請先排陣或點擊「一鍵 AI 排陣」！');
+      }
+
+      panel.classList.remove('hidden');
+
+      const pros = [];
+      const cons = [];
+      const suggestions = [];
+
+      let ratingSum = 0;
+      let assignedCount = 0;
+      let unassignedLegs = 0;
+
+      // 2. 分析各局配對強度
+      currentLegFormat.forEach((leg, legIdx) => {
+        const assignedPids = currentLineupState[legIdx];
+        const isBo3 = isBestOf3Game(leg.name, leg.count);
+        const isCricket = leg.name.toLowerCase().includes('cricket');
+
+        if (assignedPids.length < leg.count) {
+          unassignedLegs++;
+          cons.push(`【${leg.name}】尚未填滿 ${leg.count} 人出賽陣容。`);
+          return;
+        }
+
+        const players = assignedPids.map(pid => currentAvailablePlayers.find(p => String(p.userId) === String(pid))).filter(Boolean);
+        const avgLegRating = players.reduce((sum, p) => sum + (parseFloat(p.rating) || 0), 0) / (players.length || 1);
+        ratingSum += avgLegRating;
+        assignedCount++;
+
+        if (isBo3 && leg.count === 1) {
+          // 單打 3 盤 2 勝分析
+          const p = players[0];
+          const has01 = (parseFloat(p.avgPpd) || 0) >= 24;
+          const hasCrik = (parseFloat(p.avgMpr) || 0) >= 2.6;
+          if (has01 && hasCrik) {
+            pros.push(`【${leg.name}】${p.name} (Rt.${p.rating}) 具備優秀的 01 與 Cricket 雙修戰力，勝率預期極高。`);
+          } else if (!has01 && hasCrik) {
+            cons.push(`【${leg.name}】${p.name} 專精 Cricket 但 01 均分較低，在第 1 盤可能陷入苦戰。`);
+            suggestions.push(`可考慮調整 ${p.name} 至雙打或純 Cricket 賽局。`);
+          }
+        } else if (leg.count === 2) {
+          // 雙打組合協同效應
+          const p1 = players[0];
+          const p2 = players[1];
+          const rtDiff = Math.abs((parseFloat(p1.rating) || 0) - (parseFloat(p2.rating) || 0));
+
+          if (rtDiff >= 4.0) {
+            pros.push(`【${leg.name}】${p1.name} 與 ${p2.name} 形成「高帶低」強弱互補搭配，有效平滑團隊出賽戰力。`);
+          } else if (avgLegRating >= 16.0) {
+            pros.push(`【${leg.name}】雙核心組合 (${p1.name} & ${p2.name}) 局總 Rating 達 ${avgLegRating.toFixed(1)}，為必爭主力得分局。`);
+          } else if (avgLegRating <= 10.0) {
+            cons.push(`【${leg.name}】雙打總戰力偏低 (平均 Rt.${avgLegRating.toFixed(1)})，面臨對手主力時得分難度大。`);
+            suggestions.push(`建議拆分此局陣容，搭配一位高 Rating (14+) 隊員平衡實力。`);
+          }
+        } else if (isCricket) {
+          // 純 Cricket 局分析
+          const lowMprPlayer = players.find(p => (parseFloat(p.avgMpr) || 0) > 0 && (parseFloat(p.avgMpr) || 0) < 2.0);
+          if (lowMprPlayer) {
+            cons.push(`【${leg.name}】${lowMprPlayer.name} Cricket 實測場均僅 MPR ${lowMprPlayer.avgMpr}，壓制力略顯不足。`);
+          }
+        }
+      });
+
+      // 3. 出賽平衡度分析 (體力與坐板凳檢測)
+      const maxApp = Math.max(...Object.values(playerAppearance));
+      const minApp = Math.min(...Object.values(playerAppearance));
+      const zeroAppPlayers = currentAvailablePlayers.filter(p => (playerAppearance[p.userId] || 0) === 0);
+
+      if (maxApp >= 4) {
+        const overworked = currentAvailablePlayers.filter(p => playerAppearance[p.userId] === maxApp).map(p => p.name).join('、');
+        cons.push(`隊員【${overworked}】個人出賽達 ${maxApp} 場，連續作戰恐有疲勞及穩定度下降之隱患。`);
+        suggestions.push(`適度輪休主力，給後備隊員出賽以保持後段局數專注力。`);
+      } else {
+        pros.push(`出賽次數配置合理，無單一隊員負擔過多場次 (最高出賽 ${maxApp} 場)。`);
+      }
+
+      if (zeroAppPlayers.length > 0) {
+        const zeroNames = zeroAppPlayers.map(p => p.name).join('、');
+        cons.push(`隊友【${zeroNames}】已出席但未獲派任何出賽機會。`);
+        suggestions.push(`建議至少在三人賽或 Gallon 隊制賽指派出席隊友上陣，維持團隊凝聚力。`);
+      } else {
+        pros.push(`全員皆有出戰指派（零板凳），出席隊友皆有實戰參與感。`);
+      }
+
+      // 4. 計算綜合評分指數
+      let calculatedIndex = 85;
+      if (unassignedLegs > 0) calculatedIndex -= (unassignedLegs * 15);
+      if (zeroAppPlayers.length > 0) calculatedIndex -= (zeroAppPlayers.length * 4);
+      if (maxApp >= 4) calculatedIndex -= 8;
+      calculatedIndex += Math.min(15, pros.length * 3);
+      calculatedIndex = Math.max(30, Math.min(99, calculatedIndex));
+
+      scoreBadge.innerText = `陣容成熟度指數: ${calculatedIndex} / 100`;
+
+      // 5. 渲染診斷結果
+      content.innerHTML = `
+        <!-- 優勢 -->
+        <div class="bg-emerald-950/40 p-2.5 rounded-xl border border-emerald-800/80 space-y-1">
+          <p class="font-black text-emerald-400 flex items-center gap-1 text-[11px]">
+            <span>✅</span> 陣容戰術優勢 (${pros.length})
+          </p>
+          <ul class="list-disc list-inside space-y-1 text-slate-300 text-[11px] leading-relaxed">
+            ${pros.map(p => `<li>${p}</li>`).join('')}
+          </ul>
+        </div>
+
+        <!-- 弊端 / 隱患 -->
+        <div class="bg-rose-950/40 p-2.5 rounded-xl border border-rose-800/80 space-y-1">
+          <p class="font-black text-rose-400 flex items-center gap-1 text-[11px]">
+            <span>⚠️</span> 潛在隱患與弊端 (${cons.length})
+          </p>
+          <ul class="list-disc list-inside space-y-1 text-slate-300 text-[11px] leading-relaxed">
+            ${cons.map(c => `<li>${c}</li>`).join('')}
+          </ul>
+        </div>
+
+        <!-- 建議 -->
+        ${suggestions.length > 0 ? `
+          <div class="bg-amber-950/40 p-2.5 rounded-xl border border-amber-800/80 space-y-1">
+            <p class="font-black text-amber-400 flex items-center gap-1 text-[11px]">
+              <span>💡</span> 隊長戰術調度建議
+            </p>
+            <ul class="list-disc list-inside space-y-1 text-slate-300 text-[11px] leading-relaxed">
+              ${suggestions.map(s => `<li>${s}</li>`).join('')}
+            </ul>
+          </div>
+        ` : ''}
+      `;
     }
 
     async function submitLineup() {
@@ -1121,9 +1303,7 @@
       await loadMatches();
     }
 
-    /* ----------------------------------------------------
-       錄入 / 修改回合與 3 盤 2 勝選手數據 (包含該 Leg 勝負開關)
-    ---------------------------------------------------- */
+    /* 錄入 / 修改選手數據 */
     async function openStatsInputModal(matchId, opponent, currentScore) {
       if (!currentUser || currentUser.role !== 'admin') {
         return alert('⚠️ 只有隊長有權限進行選手賽事數據錄入！');
@@ -1157,7 +1337,6 @@
         const assignedPids = lineup[legIdx] || [];
         const isBo3 = isBestOf3Game(leg.name, leg.count);
 
-        // 讀取該 Leg 總勝負
         const existingLegStats = savedStats.filter(s => s.legIndex === legIdx);
         const legResult = (existingLegStats[0] && existingLegStats[0].result) ? existingLegStats[0].result : 'win';
 
@@ -1218,7 +1397,6 @@
 
         return `
           <div class="leg-card bg-slate-950 p-3.5 rounded-2xl border border-slate-800 space-y-3" data-leg="${legIdx}">
-            <!-- 該 Leg 勝負核心選擇按鈕區 -->
             <div class="flex justify-between items-center border-b border-slate-800 pb-2.5">
               <div>
                 <span class="font-black text-yellow-400 text-xs">${leg.name}</span>
@@ -1295,28 +1473,27 @@
       await loadMatches();
     }
 
-    /* 戰力榜載入 (Phoenix Scale 顯示) */
     /* 戰力榜載入 (Phoenix Continuous Scale 顯示) */
-async function loadStats() {
-  const tbody = document.getElementById('statsTableBody');
-  const res = await apiRequest('GET', { action: 'getStats' });
-  if (!res.success || !res.stats) return;
-  tbody.innerHTML = res.stats.map(s => `
-    <tr class="hover:bg-slate-800/40 transition">
-      <td class="p-3 font-bold text-white">${s.name}</td>
-      <td class="p-3 font-mono">
-        <span class="text-yellow-400 font-black text-sm">${parseFloat(s.rating).toFixed(2)}</span>
-        <span class="text-[10px] bg-slate-800 text-yellow-300 px-1.5 py-0.5 rounded ml-1 font-bold">${s.ratingClass || 'N'}</span>
-      </td>
-      <td class="p-3 text-[11px] text-slate-300 font-mono">${s.avgPpd || '-'}/${s.avgMpr || '-'}</td>
-      <td class="p-3 text-emerald-400 font-bold">${s.attendedCount} 場</td>
-      <td class="p-3">
-        <span class="text-cyan-400 font-black">${s.winRate}%</span>
-        <span class="text-[10px] text-slate-400 block">${s.legsWon}勝 / ${s.legsPlayed}場</span>
-      </td>
-    </tr>
-  `).join('');
-}
+    async function loadStats() {
+      const tbody = document.getElementById('statsTableBody');
+      const res = await apiRequest('GET', { action: 'getStats' });
+      if (!res.success || !res.stats) return;
+      tbody.innerHTML = res.stats.map(s => `
+        <tr class="hover:bg-slate-800/40 transition">
+          <td class="p-3 font-bold text-white">${s.name}</td>
+          <td class="p-3 font-mono">
+            <span class="text-yellow-400 font-black text-sm">${parseFloat(s.rating).toFixed(2)}</span>
+            <span class="text-[10px] bg-slate-800 text-yellow-300 px-1.5 py-0.5 rounded ml-1 font-bold">${s.ratingClass || 'N'}</span>
+          </td>
+          <td class="p-3 text-[11px] text-slate-300 font-mono">${s.avgPpd || '-'}/${s.avgMpr || '-'}</td>
+          <td class="p-3 text-emerald-400 font-bold">${s.attendedCount} 場</td>
+          <td class="p-3">
+            <span class="text-cyan-400 font-black">${s.winRate}%</span>
+            <span class="text-[10px] text-slate-400 block">${s.legsWon}勝 / ${s.legsPlayed}場</span>
+          </td>
+        </tr>
+      `).join('');
+    }
 
     async function loadAdminData() {
       if (!currentUser || currentUser.role !== 'admin') return;
