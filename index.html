@@ -74,43 +74,21 @@
     <section id="tab-admin" class="hidden space-y-4">
       <h2 class="text-sm font-bold text-yellow-400">隊長專屬後台</h2>
 
-      <!-- 手動快速新增單場賽事 (100% 必定成功) -->
+      <!-- 一鍵同步按鈕（已預先綁定你的隊伍網址，唔使打字） -->
       <div class="bg-slate-800 p-4 rounded-xl border border-yellow-500/50 space-y-3 shadow-lg">
-        <h3 class="text-xs font-bold text-yellow-400">➕ 快速加入單場賽事 (直接入庫)</h3>
-        <p class="text-[11px] text-slate-300">只需輸入對手與日期，即刻新增賽事供隊友簽到：</p>
+        <div class="flex justify-between items-center">
+          <h3 class="text-xs font-bold text-yellow-400">🎯 一鍵同步隊伍賽程 (免打字)</h3>
+          <span class="text-[10px] bg-rose-600 px-2 py-0.5 rounded font-bold">隊伍 ID: 208469</span>
+        </div>
         
-        <div class="grid grid-cols-2 gap-2">
-          <div>
-            <label class="text-[10px] text-slate-400 block mb-1">比賽輪數 (第幾輪)</label>
-            <input type="number" id="mRound" placeholder="例如：1" value="1" class="w-full p-2 rounded bg-slate-700 border border-slate-600 text-xs text-white">
-          </div>
-          <div>
-            <label class="text-[10px] text-slate-400 block mb-1">比賽日期</label>
-            <input type="text" id="mDate" placeholder="例如：2024-11-20" class="w-full p-2 rounded bg-slate-700 border border-slate-600 text-xs text-white">
-          </div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-2">
-          <div>
-            <label class="text-[10px] text-slate-400 block mb-1">對手隊伍名稱</label>
-            <input type="text" id="mOpponent" placeholder="例如：Bullseye" class="w-full p-2 rounded bg-slate-700 border border-slate-600 text-xs text-white">
-          </div>
-          <div>
-            <label class="text-[10px] text-slate-400 block mb-1">主場 / 客場</label>
-            <select id="mIsHome" class="w-full p-2 rounded bg-slate-700 border border-slate-600 text-xs text-white">
-              <option value="true">主場 (Home)</option>
-              <option value="false">客場 (Away)</option>
-            </select>
-          </div>
-        </div>
-
         <div>
-          <label class="text-[10px] text-slate-400 block mb-1">比賽地點 (鏢吧名稱)</label>
-          <input type="text" id="mVenue" placeholder="例如：Darts Bar MK" class="w-full p-2 rounded bg-slate-700 border border-slate-600 text-xs text-white">
+          <label class="text-[11px] text-slate-400 block mb-1">目標網址（已自動填好你所提供的官方網址）：</label>
+          <input type="text" id="targetUrl" value="https://play.phoenixdarts.com/selectMatchListML.do?cpttnId=97460&sortType1=1&searchGubunSort=1&searchTeam=208469&searchDivision=94550&searchStage=145505&searchGubun=1&searchGubunNm" class="w-full p-2.5 rounded bg-slate-700 border border-slate-600 text-xs font-mono text-slate-200">
         </div>
 
-        <button type="button" onclick="addSingleMatch()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold p-2.5 rounded-lg text-xs transition shadow flex justify-center items-center gap-1 cursor-pointer">
-          <span>➕ 即時新增此賽事</span>
+        <button type="button" onclick="triggerAutoSync()" id="syncBtnAction" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold p-3 rounded-xl text-xs transition shadow-lg flex justify-center items-center gap-2 cursor-pointer">
+          <span class="text-base">🚀</span>
+          <span>直接撳我：一鍵自動抓取並更新全季賽程</span>
         </button>
       </div>
 
@@ -298,39 +276,24 @@
       loadMatches();
     }
 
-    // 核心：即時新增單場賽事 (100% 成功)
-    async function addSingleMatch() {
-      const round = document.getElementById('mRound').value.trim();
-      const date = document.getElementById('mDate').value.trim();
-      const opponent = document.getElementById('mOpponent').value.trim();
-      const isHome = document.getElementById('mIsHome').value === 'true';
-      const venue = document.getElementById('mVenue').value.trim() || '官方指定鏢吧';
+    // 核心觸發：直接帶網址一鍵同步
+    async function triggerAutoSync() {
+      const url = document.getElementById('targetUrl').value.trim();
+      const btn = document.getElementById('syncBtnAction');
+      btn.disabled = true;
+      btn.innerHTML = `<span>⏳ 正在連線 Phoenix 官方抓取賽程...</span>`;
 
-      if (!date || !opponent) return alert('請填寫「比賽日期」及「對手隊伍名稱」！');
+      const res = await apiRequest('GET', { action: 'autoSync', url: encodeURIComponent(url) });
 
-      const singleMatch = [{
-        round: round || '1',
-        date: date,
-        opponent: opponent,
-        venue: venue,
-        isHome: isHome,
-        score: ''
-      }];
-
-      const res = await apiRequest('POST', {
-        action: 'saveMatchesDirect',
-        matches: singleMatch,
-        teamName: '我隊'
-      });
+      btn.disabled = false;
+      btn.innerHTML = `<span class="text-base">🚀</span><span>直接撳我：一鍵自動抓取並更新全季賽程</span>`;
 
       if (res.success) {
-        alert('🎉 賽事已成功新增！');
-        document.getElementById('mOpponent').value = '';
-        document.getElementById('mRound').value = String(Number(round || 1) + 1);
+        alert(res.message || `成功抓取 ${res.count} 場賽事！`);
         loadMatches();
         switchTab('matches');
       } else {
-        alert('新增失敗: ' + (res.message || res.error));
+        alert('抓取失敗: ' + (res.message || res.error || '連線逾時'));
       }
     }
 
@@ -344,7 +307,7 @@
       const setRes = await apiRequest('GET', { action: 'getSettings' });
 
       if (setRes.success && setRes.settings) {
-        if (badge) badge.innerText = `隊伍：${setRes.settings.teamName || '我的隊伍'}`;
+        if (badge) badge.innerText = `我隊：${setRes.settings.teamName || '已同步賽程'}`;
       }
 
       if (!json.success || !json.matches || json.matches.length === 0) {
@@ -353,8 +316,8 @@
             <div class="text-center py-8 bg-slate-800 rounded-xl border border-slate-700">
               <p class="text-slate-400 text-xs mb-3">目前內部尚無賽事紀錄</p>
               ${currentUser && currentUser.role === 'admin' ? `
-                <button onclick="switchTab('admin')" class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded font-bold cursor-pointer">前往隊長管理新增賽程</button>
-              ` : '<p class="text-[11px] text-slate-500">請等待隊長在後台新增賽程</p>'}
+                <button onclick="switchTab('admin')" class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded font-bold cursor-pointer">前往隊長管理一鍵抓取賽程</button>
+              ` : '<p class="text-[11px] text-slate-500">請等待隊長在後台同步最新賽程</p>'}
             </div>
           `;
         }
