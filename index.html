@@ -43,8 +43,8 @@
         <span>👤</span> 隊員 / 隊長登入
       </h2>
       <div class="space-y-3">
-        <input type="email" id="email" placeholder="電郵地址" class="w-full p-3 rounded-xl bg-slate-800 text-xs border border-slate-700 text-slate-200 focus:outline-none focus:border-rose-500">
-        <input type="password" id="password" placeholder="密碼" class="w-full p-3 rounded-xl bg-slate-800 text-xs border border-slate-700 text-slate-200 focus:outline-none focus:border-rose-500">
+        <input type="email" id="email" placeholder="登入名稱" class="w-full p-3 rounded-xl bg-slate-800 text-xs border border-slate-700 text-slate-200 focus:outline-none focus:border-rose-500">
+        <input type="password" id="password" placeholder="Pin碼" class="w-full p-3 rounded-xl bg-slate-800 text-xs border border-slate-700 text-slate-200 focus:outline-none focus:border-rose-500">
         <div id="registerFields" class="hidden space-y-3">
           <input type="text" id="regName" placeholder="隊員姓名 / 鏢名" class="w-full p-3 rounded-xl bg-slate-800 text-xs border border-slate-700 text-slate-200">
           <input type="number" step="0.01" id="regRating" placeholder="Rating 鏢力 (例如: 10.5)" class="w-full p-3 rounded-xl bg-slate-800 text-xs border border-slate-700 text-slate-200">
@@ -62,7 +62,7 @@
       <div class="flex justify-between items-center bg-slate-900/60 p-3 rounded-xl border border-slate-800">
         <div>
           <h2 class="text-[11px] font-bold uppercase tracking-wider text-slate-400">隊伍名稱</h2>
-          <p id="currentTeamBadge" class="text-sm font-black text-white">我的飛鏢隊</p>
+          <p id="currentTeamBadge" class="text-sm font-black text-white">影月</p>
         </div>
         <button onclick="loadMatches()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-3 py-1.5 rounded-lg border border-slate-700 shadow transition cursor-pointer flex items-center gap-1.5">
           <span>🔄</span> 重新整理
@@ -479,7 +479,7 @@
    async function handleAuthAction() {
       const email = document.getElementById('email').value.trim().toLowerCase();
       const password = document.getElementById('password').value.trim();
-      if (!email || !password) return alert('請輸入電郵及密碼');
+      if (!email || !password) return alert('請輸入登入名稱及Pin碼');
 
       const submitBtn = document.getElementById('authSubmitBtn');
       submitBtn.innerText = '處理中...';
@@ -502,7 +502,7 @@
           toggleAuthMode();
         } else {
           // 攔截重複註冊並提示
-          alert('⚠️ 註冊失敗：' + (res.message || '此電郵已被使用'));
+          alert('⚠️ 註冊失敗：' + (res.message || '此登入名稱已被使用'));
         }
       } else {
         const res = await apiRequest('POST', { action: 'login', email, password });
@@ -513,7 +513,7 @@
           checkAuthState();
           loadMatches();
         } else {
-          alert(res.message || '登入失敗，請確認電郵密碼');
+          alert(res.message || '登入失敗，請確認登入名稱及Pin碼');
         }
       }
     }
