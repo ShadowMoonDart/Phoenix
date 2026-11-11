@@ -84,9 +84,9 @@
             <tr>
               <th class="p-3">隊員</th>
               <th class="p-3">即時 Rating</th>
-              <th class="p-3">01 / Crik 場均</th>
+              <th class="p-3">01 / Cricket 場均</th>
               <th class="p-3">出席場數</th>
-              <th class="p-3">Leg 勝率</th>
+              <th class="p-3">局/盤 勝率</th>
             </tr>
           </thead>
           <tbody id="statsTableBody" class="divide-y divide-slate-800"></tbody>
@@ -238,7 +238,7 @@
       <div class="p-4 overflow-y-auto space-y-4 text-xs">
         <div>
           <h4 class="font-bold text-yellow-400 text-xs mb-2.5 flex items-center justify-between">
-            <span>🎯 各場出賽排陣及比賽數據</span>
+            <span>🎯 各場出賽排陣及比賽數據 (3盤2勝制詳細)</span>
             <span id="modalLegCountTag" class="text-[10px] text-slate-400 font-normal"></span>
           </h4>
           <div id="modalLineupList" class="space-y-2 bg-slate-950/60 p-3 rounded-2xl border border-slate-800">載入中...</div>
@@ -270,9 +270,9 @@
         <div class="mt-3 bg-gradient-to-r from-indigo-900/40 via-purple-900/30 to-slate-900 p-2.5 rounded-2xl border border-indigo-500/40 flex justify-between items-center">
           <div>
             <p class="text-xs font-black text-indigo-300 flex items-center gap-1">
-              <span>🧠</span> AI 專項數據智能排陣
+              <span>🧠</span> AI 專項數據智能排陣 (01 / Cricket)
             </p>
-            <p class="text-[10px] text-slate-400">依據歷史 PPD (01) / MPR (Cricket) 最佳化陣容</p>
+            <p class="text-[10px] text-slate-400">依據選手 3 盤 2 勝歷史實測 PPD 及 MPR 自動最佳化</p>
           </div>
           <button type="button" onclick="triggerAiLineupSuggestion()" class="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold px-3 py-1.5 rounded-xl text-xs transition shadow cursor-pointer">
             ✨ 一鍵 AI 排陣
@@ -291,15 +291,15 @@
     </div>
   </div>
 
-  <!-- Modal 3：隊長專用 - 各 Leg 賽果及選手詳細個人數據錄入/修改視窗 -->
+  <!-- Modal 3：隊長專用 - 各 Leg 賽果及選手詳細個人數據錄入/修改視窗 (支援 3 盤 2 勝制) -->
   <div id="statsInputModal" class="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden">
     <div class="bg-slate-900 rounded-3xl max-w-lg w-full max-h-[92vh] flex flex-col border border-emerald-500/60 shadow-2xl">
       <div class="p-4 border-b border-slate-800 bg-slate-950/70 flex justify-between items-center">
         <div>
           <h3 class="text-sm font-black text-emerald-400 flex items-center gap-1.5">
-            <span>📝</span> 錄入 / 修改比賽回合與選手數據
+            <span>📝</span> 錄入 / 修改回合與 3 盤 2 勝制選手數據
           </h3>
-          <p class="text-[11px] text-slate-400 mt-0.5">數據儲存後將即時自動更新選手 Rating 與歷史戰績庫</p>
+          <p class="text-[11px] text-slate-400 mt-0.5">單打/雙打自動展開 3 盤輸入，即時更新選手 Rating 與專項數據庫</p>
         </div>
         <button onclick="closeModal('statsInputModal')" class="w-8 h-8 rounded-full bg-slate-800 text-slate-300 hover:bg-slate-700 flex items-center justify-center font-bold text-base cursor-pointer">&times;</button>
       </div>
@@ -310,7 +310,7 @@
           <input type="text" id="statsInputTotalScore" placeholder="例如: 5-4" class="p-2 rounded-xl bg-slate-900 border border-emerald-500/50 text-yellow-300 font-black text-center text-sm w-32 focus:outline-none focus:border-emerald-400">
         </div>
 
-        <div id="statsInputLegsContainer" class="space-y-3"></div>
+        <div id="statsInputLegsContainer" class="space-y-4"></div>
       </div>
 
       <div class="p-4 border-t border-slate-800 bg-slate-950/60">
@@ -338,7 +338,7 @@
     let currentAvailablePlayers = [];
     let currentAllTeamUsers = [];
     let currentLegFormat = [];
-    let systemGlobalLegFormat = []; // 儲存全局最新的 Leg Format
+    let systemGlobalLegFormat = [];
 
     const GAME_OPTIONS = [
       {
@@ -409,6 +409,14 @@
     };
 
     let editingLegs = [];
+
+    // 判斷是否為 3 盤 2 勝項目 (男單、女單、雙打)
+    function isBestOf3Game(legName, count) {
+      const name = (legName || '').toLowerCase();
+      if (name.includes('男單') || name.includes('女單') || name.includes('雙打')) return true;
+      if (count === 1 || count === 2) return true;
+      return false;
+    }
 
     async function apiRequest(method, payload = {}) {
       try {
@@ -641,7 +649,7 @@
                 `}
               </div>
 
-              <!-- 日期與地點 -->
+              <!-- 特大日期與地點 -->
               <div class="bg-slate-950/80 p-3 rounded-2xl border border-slate-800/80 flex items-center gap-3">
                 <div class="text-2xl p-2 bg-slate-900 rounded-xl border border-slate-800">📅</div>
                 <div class="flex-1">
@@ -684,7 +692,7 @@
                 </div>
               ` : ''}
 
-              <!-- 隊長操作按鈕 -->
+              <!-- 隊長專用操作 -->
               ${isAdmin ? `
                 <div class="pt-2 border-t border-slate-800 space-y-2">
                   <button onclick="openLineupModal('${m.id}', '${m.opponent}', ${isFinished ? 'true' : 'false'})" class="w-full bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-slate-950 font-black py-2 rounded-xl text-xs transition cursor-pointer shadow flex items-center justify-center gap-1.5">
@@ -692,7 +700,7 @@
                   </button>
                   
                   <button onclick="openStatsInputModal('${m.id}', '${m.opponent}', '${m.score || ''}')" class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black py-2 rounded-xl text-xs transition cursor-pointer shadow flex items-center justify-center gap-1.5">
-                    <span>📝</span> 錄入 / 修改回合選手表現 (按排陣名單)
+                    <span>📝</span> 錄入 / 修改回合 (單雙打3盤2勝制)
                   </button>
 
                   <div class="flex gap-2">
@@ -727,7 +735,6 @@
         return alert('請至少填寫「比賽日期」及「對手隊名」！');
       }
 
-      // 套用當前隊長管理中儲存的賽制
       const res = await apiRequest('POST', {
         action: 'addMatch',
         type, round, date, opponent, isHome, venue, isFinished, score,
@@ -863,7 +870,7 @@
       await loadMatches();
     }
 
-    /* 查看詳情 */
+    /* 查看詳情視窗 (包含 3 盤明細) */
     async function viewMatchDetails(matchId, opponent, venue, score) {
       document.getElementById('modalMatchTitle').innerText = `VS ${opponent}`;
       document.getElementById('modalMatchSubtitle').innerText = `${venue ? '地點: ' + venue : ''} ${score ? ' | 比分: ' + score : ''}`;
@@ -887,22 +894,49 @@
       } else {
         document.getElementById('modalLineupList').innerHTML = legFormat.map((leg, idx) => {
           const playerIds = captainLineup[idx] || [];
-          const legStatItem = legStats.find(s => s.legIndex === idx);
-          const legResultBadge = legStatItem ? (legStatItem.result === 'win' ? '<span class="text-[10px] bg-emerald-950 text-emerald-400 px-1.5 py-0.5 rounded font-black border border-emerald-800">勝</span>' : '<span class="text-[10px] bg-rose-950 text-rose-400 px-1.5 py-0.5 rounded font-black border border-rose-800">負</span>') : '';
+          const isBo3 = isBestOf3Game(leg.name, leg.count);
+          
+          // 抓取該 Leg 總結果
+          const legStatItems = legStats.filter(s => s.legIndex === idx);
+          const firstStat = legStatItems[0];
+          const legResultBadge = firstStat ? (firstStat.result === 'win' ? '<span class="text-[10px] bg-emerald-950 text-emerald-400 px-1.5 py-0.5 rounded font-black border border-emerald-800">勝</span>' : '<span class="text-[10px] bg-rose-950 text-rose-400 px-1.5 py-0.5 rounded font-black border border-rose-800">負</span>') : '';
 
-          const names = playerIds.map(pid => {
+          // 選手名單
+          const pNames = playerIds.map(pid => {
             const p = atts.find(u => String(u.userId) === String(pid)) || allActive.find(u => String(u.userId) === String(pid));
-            const pStat = legStats.find(s => s.legIndex === idx && String(s.userId) === String(pid));
-            const statText = (pStat && pStat.statValue) ? ` [${pStat.statType.toUpperCase()}: ${pStat.statValue}]` : '';
-            return p ? `<span class="inline-block"><b class="text-white">${p.name}</b><span class="text-emerald-400 text-[10px]">${statText}</span></span>` : '<span class="text-slate-500">未指定</span>';
-          }).join('、');
+            return p ? p.name : '未指定';
+          }).join(' & ');
+
+          // 盤數數據明細
+          let subSetsHtml = '';
+          if (legStatItems.length > 0) {
+            // 分盤分組
+            const setsMap = {};
+            legStatItems.forEach(item => {
+              const sIdx = item.subSet || 1;
+              if (!setsMap[sIdx]) setsMap[sIdx] = [];
+              setsMap[sIdx].push(item);
+            });
+
+            subSetsHtml = Object.keys(setsMap).sort().map(sIdx => {
+              const items = setsMap[sIdx];
+              const pDataStr = items.map(it => {
+                const p = allActive.find(u => String(u.userId) === String(it.userId));
+                return `${p ? p.name : ''}: <span class="text-yellow-300 font-mono">${it.statType.toUpperCase()} ${it.statValue || '-'}</span>`;
+              }).join(' | ');
+              return `<div class="text-[10px] text-slate-400 bg-slate-900/80 px-2 py-1 rounded">第 ${sIdx} 盤 ➔ ${pDataStr}</div>`;
+            }).join('');
+          }
 
           return `
-            <div class="border-b border-slate-800/80 pb-2 last:border-0 space-y-1">
+            <div class="border-b border-slate-800/80 pb-2.5 last:border-0 space-y-1.5">
               <div class="flex justify-between items-center">
-                <span class="text-yellow-400 font-bold flex items-center gap-1.5">${leg.name} ${legResultBadge}</span>
+                <span class="text-yellow-400 font-bold flex items-center gap-1.5">
+                  ${leg.name} ${isBo3 ? '<span class="text-[10px] text-cyan-400 font-mono">[3盤2勝]</span>' : ''} ${legResultBadge}
+                </span>
+                <span class="text-slate-300 font-semibold">${pNames || '未排'}</span>
               </div>
-              <div class="text-slate-300 pl-1">${names || '<span class="text-slate-500">未排</span>'}</div>
+              ${subSetsHtml ? `<div class="space-y-1 pl-1">${subSetsHtml}</div>` : ''}
             </div>
           `;
         }).join('');
@@ -935,13 +969,12 @@
       const reasonBadge = document.getElementById('aiReasoningBadge');
       if (reasonBadge) reasonBadge.classList.add('hidden');
 
-      container.innerHTML = '<p class="text-center text-slate-400 py-6">載入最新賽季賽制及出賽名單中...</p>';
+      container.innerHTML = '<p class="text-center text-slate-400 py-6">載入最新賽制與戰力評估中...</p>';
       document.getElementById('lineupModal').classList.remove('hidden');
 
       const res = await apiRequest('GET', { action: 'getMatchDetails', matchId });
       if (!res.success) return alert('載入失敗');
 
-      // 核心修正 1：排陣嚴格依據當前已保存之最新賽制 (優先取 res.legFormat，否則取 systemGlobalLegFormat)
       currentLegFormat = (res.legFormat && res.legFormat.length > 0) ? res.legFormat : systemGlobalLegFormat;
       currentAllTeamUsers = res.allActiveUsers || [];
       const saved = res.captainLineup || [];
@@ -964,6 +997,7 @@
       const container = document.getElementById('lineupLegsContainer');
       container.innerHTML = currentLegFormat.map((leg, legIdx) => {
         const assigned = assignedData[legIdx] || [];
+        const isBo3 = isBestOf3Game(leg.name, leg.count);
         let selects = '';
         for (let i = 0; i < leg.count; i++) {
           const selectedPid = assigned[i] || '';
@@ -972,7 +1006,7 @@
               <option value="">-- 選派隊員 ${i + 1} --</option>
               ${currentAvailablePlayers.map(p => `
                 <option value="${p.userId}" ${String(p.userId) === String(selectedPid) ? 'selected' : ''}>
-                  ${p.name} (Rating: ${p.rating} | PPD:${p.avgPpd || '-'} MPR:${p.avgMpr || '-'})
+                  ${p.name} (Rating: ${p.rating} | 01:${p.avgPpd || '-'} Crik:${p.avgMpr || '-'})
                 </option>
               `).join('')}
             </select>
@@ -981,8 +1015,11 @@
         return `
           <div class="bg-slate-950 p-3 rounded-2xl border border-slate-800">
             <div class="flex justify-between items-center mb-2">
-              <label class="font-black text-yellow-400 text-xs">${leg.name}</label>
-              <span class="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-md font-bold">${leg.count} 人賽</span>
+              <label class="font-black text-yellow-400 text-xs flex items-center gap-1.5">
+                <span>${leg.name}</span>
+                ${isBo3 ? '<span class="text-[10px] bg-cyan-950 text-cyan-300 border border-cyan-800 px-1.5 py-0.2 rounded font-mono font-bold">3盤2勝</span>' : ''}
+              </label>
+              <span class="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-md font-bold">${leg.count} 人出戰</span>
             </div>
             ${selects}
           </div>
@@ -990,7 +1027,7 @@
       }).join('');
     }
 
-    /* 升級版 AI 陣容智能推算 (結合歷史 PPD / MPR 專項數據) */
+    /* 結合 3 盤 2 勝 PPD 與 MPR 專項數據之 AI 智能演算 */
     function triggerAiLineupSuggestion() {
       if (!currentAvailablePlayers || currentAvailablePlayers.length === 0) {
         return alert('目前沒有可用隊員名單，無法進行 AI 分析。');
@@ -1004,25 +1041,27 @@
         aiLineup[legIdx] = [];
         const needed = leg.count;
         const isCricket = leg.name.toLowerCase().includes('cricket');
+        const isBo3 = isBestOf3Game(leg.name, leg.count);
 
-        // 核心修正 3：專項數據排序
         let candidates = [...currentAvailablePlayers].sort((a, b) => {
-          // 優先平衡出場率
+          // 出場頻率優先平衡
           if (appearanceCounts[a.userId] !== appearanceCounts[b.userId]) {
             return appearanceCounts[a.userId] - appearanceCounts[b.userId];
           }
-          // Cricket 優先看 MPR
-          if (isCricket) {
+          if (isBo3) {
+            // 3盤2勝制兼顧 01 與 Cricket 綜合實力
+            const pScoreA = (parseFloat(a.avgPpd) || 0) + ((parseFloat(a.avgMpr) || 0) * 25);
+            const pScoreB = (parseFloat(b.avgPpd) || 0) + ((parseFloat(b.avgMpr) || 0) * 25);
+            if (pScoreA !== pScoreB) return pScoreB - pScoreA;
+          } else if (isCricket) {
             const mprA = parseFloat(a.avgMpr) || 0;
             const mprB = parseFloat(b.avgMpr) || 0;
             if (mprA !== mprB) return mprB - mprA;
           } else {
-            // 01 優先看 PPD
             const ppdA = parseFloat(a.avgPpd) || 0;
             const ppdB = parseFloat(b.avgPpd) || 0;
             if (ppdA !== ppdB) return ppdB - ppdA;
           }
-          // 最後看綜合 Rating
           return (parseFloat(b.rating) || 0) - (parseFloat(a.rating) || 0);
         });
 
@@ -1033,7 +1072,7 @@
             appearanceCounts[chosen.userId]++;
           }
         } else if (needed === 2) {
-          // 強弱搭檔配對策略
+          // 雙打採用強弱互補搭配策略
           const p1 = candidates[0];
           const p2 = candidates[candidates.length - 1] || candidates[1];
           if (p1) { aiLineup[legIdx].push(p1.userId); appearanceCounts[p1.userId]++; }
@@ -1049,7 +1088,6 @@
         }
       });
 
-      // 填入選單
       aiLineup.forEach((legPids, legIdx) => {
         legPids.forEach((pid, slotIdx) => {
           const sel = document.querySelector(`.lineup-select[data-leg="${legIdx}"][data-slot="${slotIdx}"]`);
@@ -1061,7 +1099,7 @@
       if (reasonBadge) {
         reasonBadge.classList.remove('hidden');
         reasonBadge.innerHTML = `
-          <span>🧠 <b>AI 專項推算完成：</b>01 賽局已優先配對高 PPD 選手，Cricket 已配對高 MPR 選手，並已平衡隊友上場頻率！</span>
+          <span>🧠 <b>AI 專項推算完成：</b>男單、女單、雙打 (3盤2勝) 優先指派 01/Cricket 雙修頂尖戰力；單局賽事針對性佈陣完成！</span>
         `;
       }
     }
@@ -1088,7 +1126,9 @@
       await loadMatches();
     }
 
-    /* 核心修正 2：錄入/修改選手數據按排陣後的選手名來顯示 */
+    /* ----------------------------------------------------
+       核心升級：男單、女單、雙打必定 3 盤 2 勝數據錄入
+    ---------------------------------------------------- */
     async function openStatsInputModal(matchId, opponent, currentScore) {
       if (!currentUser || currentUser.role !== 'admin') {
         return alert('⚠️ 只有隊長有權限進行選手賽事數據錄入！');
@@ -1097,7 +1137,7 @@
       currentStatsMatchId = matchId;
       document.getElementById('statsInputTotalScore').value = currentScore || '';
       const container = document.getElementById('statsInputLegsContainer');
-      container.innerHTML = '<p class="text-center text-slate-400 py-6">載入各回合出戰名單與數據中...</p>';
+      container.innerHTML = '<p class="text-center text-slate-400 py-6">載入各回合出戰名單與 3 盤 2 勝規格中...</p>';
       document.getElementById('statsInputModal').classList.remove('hidden');
 
       const res = await apiRequest('GET', { action: 'getMatchDetails', matchId });
@@ -1120,95 +1160,132 @@
 
       container.innerHTML = legs.map((leg, legIdx) => {
         const assignedPids = lineup[legIdx] || [];
-        const isCricket = leg.name.toLowerCase().includes('cricket');
-        const defaultStatType = isCricket ? 'mpr' : 'ppd';
+        const isBo3 = isBestOf3Game(leg.name, leg.count);
 
-        const existingLegStat = savedStats.find(s => s.legIndex === legIdx);
-        const legResult = existingLegStat ? existingLegStat.result : 'win';
+        // 讀取該 Leg 總勝負
+        const existingLegStats = savedStats.filter(s => s.legIndex === legIdx);
+        const legResult = (existingLegStats[0] && existingLegStats[0].result) ? existingLegStats[0].result : 'win';
 
-        let playerRows = '';
         if (assignedPids.length === 0) {
-          playerRows = '<p class="text-[11px] text-slate-500 py-1">此 Leg 隊長尚未指派隊員</p>';
-        } else {
-          assignedPids.forEach((pid, slotIdx) => {
-            const user = allUsers.find(u => String(u.userId) === String(pid));
-            const pStat = savedStats.find(s => s.legIndex === legIdx && String(s.userId) === String(pid));
-            const statVal = pStat ? pStat.statValue : '';
-            const statType = pStat ? pStat.statType : defaultStatType;
+          return `
+            <div class="bg-slate-950 p-3.5 rounded-2xl border border-slate-800">
+              <span class="font-black text-yellow-400 text-xs">${leg.name}</span>
+              <p class="text-[11px] text-slate-500 mt-1">隊長尚未指派排陣隊員，請先排陣。</p>
+            </div>
+          `;
+        }
 
-            playerRows += `
-              <div class="flex items-center gap-2 mt-2 bg-slate-900 p-2.5 rounded-xl border border-slate-800">
-                <span class="text-white font-bold w-28 truncate text-xs flex items-center gap-1">
-                  <span>👤</span> ${user ? user.name : '未知隊員'}
+        // 盤數設定：若是男單、女單、雙打，必定是 3 盤 2 勝制 (Set 1: 01, Set 2: Cricket, Set 3: 決勝局)
+        const setsConfig = isBo3 ? [
+          { setNum: 1, label: "第 1 盤 (01 賽制)", defaultType: "ppd", defaultName: "501/701" },
+          { setNum: 2, label: "第 2 盤 (Cricket 賽制)", defaultType: "mpr", defaultName: "Cricket" },
+          { setNum: 3, label: "第 3 盤 (決勝盤 / 若打至1-1)", defaultType: "ppd", defaultName: "Choice/01" }
+        ] : [
+          { setNum: 1, label: "單局對決", defaultType: leg.name.toLowerCase().includes('cricket') ? 'mpr' : 'ppd', defaultName: leg.name }
+        ];
+
+        let setsHtml = setsConfig.map(sConfig => {
+          let playerRows = assignedPids.map((pid, pSlot) => {
+            const user = allUsers.find(u => String(u.userId) === String(pid));
+            const pStat = existingLegStats.find(s => (s.subSet === sConfig.setNum || (!s.subSet && sConfig.setNum === 1)) && String(s.userId) === String(pid));
+            const statVal = pStat ? pStat.statValue : '';
+            const statType = pStat ? pStat.statType : sConfig.defaultType;
+
+            return `
+              <div class="flex items-center gap-2 bg-slate-900 p-2 rounded-xl border border-slate-800">
+                <span class="text-white font-bold w-24 truncate text-[11px] flex items-center gap-1">
+                  <span>👤</span> ${user ? user.name : '未知選手'}
                 </span>
-                <input type="hidden" class="stat-player-id" data-leg="${legIdx}" data-slot="${slotIdx}" value="${pid}">
                 
-                <select class="stat-type-select bg-slate-800 text-[10px] text-slate-300 p-1.5 rounded-lg border border-slate-700" data-leg="${legIdx}" data-slot="${slotIdx}">
+                <input type="hidden" class="player-id-val" value="${pid}">
+
+                <select class="player-stat-type bg-slate-800 text-[10px] text-slate-300 p-1.5 rounded-lg border border-slate-700">
                   <option value="ppd" ${statType === 'ppd' ? 'selected' : ''}>PPD (01)</option>
                   <option value="mpr" ${statType === 'mpr' ? 'selected' : ''}>MPR (Cricket)</option>
                 </select>
 
-                <input type="number" step="0.01" placeholder="數值 (例: ${isCricket ? '3.25' : '82.5'})" 
-                  class="stat-val-input flex-1 p-1.5 rounded-lg bg-slate-950 border border-slate-700 text-yellow-300 font-mono text-xs focus:outline-none focus:border-emerald-400 font-bold" 
-                  data-leg="${legIdx}" data-slot="${slotIdx}" value="${statVal}">
+                <input type="number" step="0.01" placeholder="數值 (PPD/MPR)" 
+                  class="player-stat-val flex-1 p-1.5 rounded-lg bg-slate-950 border border-slate-700 text-yellow-300 font-mono text-xs focus:outline-none focus:border-emerald-400 font-bold" 
+                  value="${statVal}">
               </div>
             `;
-          });
-        }
+          }).join('');
+
+          return `
+            <div class="set-card bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/80 space-y-1.5" data-set="${sConfig.setNum}">
+              <div class="flex justify-between items-center text-[10px] font-bold text-slate-400">
+                <span>⚡ ${sConfig.label}</span>
+                ${sConfig.setNum === 3 ? '<span class="text-amber-400 font-normal">若2-0結束可留空</span>' : ''}
+              </div>
+              <div class="space-y-1.5">${playerRows}</div>
+            </div>
+          `;
+        }).join('');
 
         return `
-          <div class="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 space-y-2">
-            <div class="flex justify-between items-center">
-              <span class="font-black text-yellow-400 text-xs">${leg.name}</span>
+          <div class="leg-card bg-slate-950 p-3.5 rounded-2xl border border-slate-800 space-y-3" data-leg="${legIdx}">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+              <div>
+                <span class="font-black text-yellow-400 text-xs">${leg.name}</span>
+                ${isBo3 ? '<span class="ml-1.5 text-[10px] bg-cyan-950 text-cyan-300 border border-cyan-800 px-2 py-0.5 rounded-full font-bold">3 盤 2 勝制</span>' : '<span class="ml-1.5 text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full">單局賽</span>'}
+              </div>
               <div class="flex items-center gap-1">
-                <label class="text-[10px] text-slate-400 mr-1 font-bold">局果:</label>
-                <select class="leg-result-select bg-slate-800 text-[11px] font-black p-1.5 rounded-lg border border-slate-700 ${legResult === 'win' ? 'text-emerald-400' : 'text-rose-400'}" data-leg="${legIdx}" onchange="this.className='leg-result-select bg-slate-800 text-[11px] font-black p-1.5 rounded-lg border border-slate-700 ' + (this.value==='win'?'text-emerald-400':'text-rose-400')">
+                <label class="text-[10px] text-slate-400 mr-1 font-bold">此場局果:</label>
+                <select class="leg-result-select bg-slate-800 text-[11px] font-black p-1.5 rounded-lg border border-slate-700 ${legResult === 'win' ? 'text-emerald-400' : 'text-rose-400'}" onchange="this.className='leg-result-select bg-slate-800 text-[11px] font-black p-1.5 rounded-lg border border-slate-700 ' + (this.value==='win'?'text-emerald-400':'text-rose-400')">
                   <option value="win" ${legResult === 'win' ? 'selected' : ''}>勝 (WIN)</option>
                   <option value="loss" ${legResult === 'loss' ? 'selected' : ''}>負 (LOSE)</option>
                 </select>
               </div>
             </div>
-            ${playerRows}
+
+            <div class="space-y-2">
+              ${setsHtml}
+            </div>
           </div>
         `;
       }).join('');
     }
 
+    /* 收集各盤與選手的完整數據並提交 */
     async function saveMatchStatsData() {
       if (!currentStatsMatchId) return;
 
       const totalScore = document.getElementById('statsInputTotalScore').value.trim();
-      const container = document.getElementById('statsInputLegsContainer');
-      const legElements = container.querySelectorAll('.leg-result-select');
-
+      const legCards = document.querySelectorAll('.leg-card');
       const legsPayload = [];
 
-      legElements.forEach(selectEl => {
-        const legIdx = parseInt(selectEl.dataset.leg);
-        const result = selectEl.value;
-        const playerInputs = container.querySelectorAll(`.stat-val-input[data-leg="${legIdx}"]`);
+      legCards.forEach(lCard => {
+        const legIdx = parseInt(lCard.dataset.leg);
+        const result = lCard.querySelector('.leg-result-select').value;
+        const setCards = lCard.querySelectorAll('.set-card');
 
-        const players = [];
-        playerInputs.forEach(input => {
-          const slot = input.dataset.slot;
-          const pid = container.querySelector(`.stat-player-id[data-leg="${legIdx}"][data-slot="${slot}"]`)?.value || '';
-          const statType = container.querySelector(`.stat-type-select[data-leg="${legIdx}"][data-slot="${slot}"]`)?.value || 'ppd';
-          const statValue = input.value.trim();
+        const setsData = [];
 
-          if (pid) {
-            players.push({
-              userId: pid,
-              statType: statType,
-              statValue: statValue
-            });
-          }
+        setCards.forEach(sCard => {
+          const setNum = parseInt(sCard.dataset.set);
+          const pContainers = sCard.querySelectorAll('.flex.items-center.gap-2');
+
+          pContainers.forEach(pc => {
+            const pid = pc.querySelector('.player-id-val').value;
+            const statType = pc.querySelector('.player-stat-type').value;
+            const statVal = pc.querySelector('.player-stat-val').value.trim();
+
+            if (pid && statVal !== '') {
+              setsData.push({
+                subSet: setNum,
+                userId: pid,
+                statType: statType,
+                statValue: statVal
+              });
+            }
+          });
         });
 
         legsPayload.push({
           legIndex: legIdx,
           legName: `Leg ${legIdx + 1}`,
           result: result,
-          players: players
+          setsData: setsData
         });
       });
 
@@ -1219,7 +1296,7 @@
         legsData: legsPayload
       });
 
-      alert(res.message || '賽事成績與個人數據已更新！Rating 已自動重算。');
+      alert(res.message || '賽事成績與各盤個人數據已更新！Rating 與專項庫已重算。');
       closeModal('statsInputModal');
       await loadMatches();
     }
