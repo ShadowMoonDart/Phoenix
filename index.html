@@ -1296,26 +1296,27 @@
     }
 
     /* 戰力榜載入 (Phoenix Scale 顯示) */
-    async function loadStats() {
-      const tbody = document.getElementById('statsTableBody');
-      const res = await apiRequest('GET', { action: 'getStats' });
-      if (!res.success || !res.stats) return;
-      tbody.innerHTML = res.stats.map(s => `
-        <tr class="hover:bg-slate-800/40 transition">
-          <td class="p-3 font-bold text-white">${s.name}</td>
-          <td class="p-3 font-mono">
-            <span class="text-yellow-400 font-black text-sm">${s.rating}</span>
-            <span class="text-[10px] bg-slate-800 text-yellow-300 px-1.5 py-0.5 rounded ml-1 font-bold">${s.ratingClass || 'N'}</span>
-          </td>
-          <td class="p-3 text-[11px] text-slate-300 font-mono">${s.avgPpd || '-'}/${s.avgMpr || '-'}</td>
-          <td class="p-3 text-emerald-400 font-bold">${s.attendedCount} 場</td>
-          <td class="p-3">
-            <span class="text-cyan-400 font-black">${s.winRate}%</span>
-            <span class="text-[10px] text-slate-400 block">${s.legsWon}勝 / ${s.legsPlayed}場</span>
-          </td>
-        </tr>
-      `).join('');
-    }
+    /* 戰力榜載入 (Phoenix Continuous Scale 顯示) */
+async function loadStats() {
+  const tbody = document.getElementById('statsTableBody');
+  const res = await apiRequest('GET', { action: 'getStats' });
+  if (!res.success || !res.stats) return;
+  tbody.innerHTML = res.stats.map(s => `
+    <tr class="hover:bg-slate-800/40 transition">
+      <td class="p-3 font-bold text-white">${s.name}</td>
+      <td class="p-3 font-mono">
+        <span class="text-yellow-400 font-black text-sm">${parseFloat(s.rating).toFixed(2)}</span>
+        <span class="text-[10px] bg-slate-800 text-yellow-300 px-1.5 py-0.5 rounded ml-1 font-bold">${s.ratingClass || 'N'}</span>
+      </td>
+      <td class="p-3 text-[11px] text-slate-300 font-mono">${s.avgPpd || '-'}/${s.avgMpr || '-'}</td>
+      <td class="p-3 text-emerald-400 font-bold">${s.attendedCount} 場</td>
+      <td class="p-3">
+        <span class="text-cyan-400 font-black">${s.winRate}%</span>
+        <span class="text-[10px] text-slate-400 block">${s.legsWon}勝 / ${s.legsPlayed}場</span>
+      </td>
+    </tr>
+  `).join('');
+}
 
     async function loadAdminData() {
       if (!currentUser || currentUser.role !== 'admin') return;
