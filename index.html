@@ -9,20 +9,20 @@
 <body class="bg-slate-950 text-slate-100 min-h-screen pb-24 selection:bg-rose-500 selection:text-white">
 
   <!-- 頂部導航 -->
-  <header class="bg-slate-900/90 backdrop-blur-md p-4 sticky top-0 z-40 border-b border-slate-800 flex justify-between items-center shadow-lg">
-    <div class="flex items-center gap-2.5">
-      <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-rose-600 to-amber-500 flex items-center justify-center shadow-md">
-        <span class="text-base">🎯</span>
+  <header class="bg-slate-900 p-4 sticky top-0 z-40 border-b border-slate-800 flex justify-between items-center shadow-lg">
+    <div class="flex items-center gap-2">
+      <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-rose-600 to-amber-500 flex items-center justify-center font-black">
+        🎯
       </div>
       <div>
         <h1 class="text-base font-black text-white tracking-wider leading-none">DART MASTER</h1>
-        <span class="text-[10px] text-rose-400 font-bold tracking-widest uppercase">Team Management</span>
+        <span class="text-[10px] text-rose-400 font-bold tracking-widest uppercase">Team Manager</span>
       </div>
     </div>
-    <div id="userInfo" class="text-xs bg-slate-800/80 px-3 py-1.5 rounded-full border border-slate-700">尚未登入</div>
+    <div id="userInfo" class="text-xs bg-slate-800 px-3 py-1.5 rounded-full border border-slate-700">尚未登入</div>
   </header>
 
-  <!-- 標籤導航欄 -->
+  <!-- 標籤導航欄 (未以隊長登入時，完全隱藏「隊長管理」) -->
   <nav class="flex justify-around bg-slate-900 border-b border-slate-800 text-xs font-bold sticky top-16 z-30">
     <button onclick="switchTab('matches')" id="btn-matches" class="tab-btn py-3 px-3 border-b-2 border-rose-500 text-rose-400 flex items-center gap-1.5 transition">
       <span>📅</span> 賽程簽到
@@ -30,7 +30,6 @@
     <button onclick="switchTab('stats')" id="btn-stats" class="tab-btn py-3 px-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-1.5 transition">
       <span>📊</span> 出席率榜
     </button>
-    <!-- 預設強制隱藏隊長管理分頁標籤 -->
     <button onclick="switchTab('admin')" id="btn-admin" class="tab-btn py-3 px-3 border-b-2 border-transparent hidden text-yellow-400 hover:text-yellow-300 flex items-center gap-1.5 transition">
       <span>👑</span> 隊長管理
     </button>
@@ -41,7 +40,7 @@
     <!-- 登入面板 (未登入時顯示) -->
     <section id="authSection" class="bg-slate-900 p-5 rounded-2xl border border-slate-800 my-4 shadow-xl">
       <h2 class="text-sm font-bold mb-3 text-white flex items-center gap-2" id="authTitle">
-        <span>👤</span> 隊員登入
+        <span>👤</span> 隊員 / 隊長登入
       </h2>
       <div class="space-y-3">
         <input type="email" id="email" placeholder="電郵地址" class="w-full p-3 rounded-xl bg-slate-800 text-xs border border-slate-700 text-slate-200 focus:outline-none focus:border-rose-500">
@@ -62,18 +61,15 @@
     <section id="tab-matches" class="space-y-4">
       <div class="flex justify-between items-center bg-slate-900/60 p-3 rounded-xl border border-slate-800">
         <div>
-          <h2 class="text-[11px] font-bold uppercase tracking-wider text-slate-400">當前隊伍</h2>
-          <p id="currentTeamBadge" class="text-sm font-black text-white">讀取中...</p>
+          <h2 class="text-[11px] font-bold uppercase tracking-wider text-slate-400">隊伍名稱</h2>
+          <p id="currentTeamBadge" class="text-sm font-black text-white">我的飛鏢隊</p>
         </div>
-        <button onclick="loadInitialData()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-3 py-1.5 rounded-lg border border-slate-700 shadow transition cursor-pointer flex items-center gap-1.5">
+        <button onclick="loadMatches()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-3 py-1.5 rounded-lg border border-slate-700 shadow transition cursor-pointer flex items-center gap-1.5">
           <span>🔄</span> 重新整理
         </button>
       </div>
       <div id="matchesContainer" class="space-y-3">
-        <div class="text-center py-10 bg-slate-900/60 rounded-3xl border border-slate-800">
-          <div class="inline-block animate-spin text-2xl mb-2">⏳</div>
-          <p class="text-xs text-slate-300 font-medium">正在極速載入賽程中...</p>
-        </div>
+        <p class="text-xs text-slate-400 text-center py-6">正在載入賽事資料...</p>
       </div>
     </section>
 
@@ -92,13 +88,13 @@
       </div>
     </section>
 
-    <!-- 3. 隊長管理分頁 (未登入隊長絕不可見) -->
+    <!-- 3. 隊長管理分頁 (未以隊長登入時嚴格隱藏) -->
     <section id="tab-admin" class="hidden space-y-4">
       <div class="flex justify-between items-center bg-amber-500/10 p-3 rounded-2xl border border-amber-500/30">
         <h2 class="text-sm font-black text-yellow-400 flex items-center gap-1.5">
           <span>👑</span> 隊長專屬控制後台
         </h2>
-        <span class="text-[10px] bg-yellow-500 text-slate-950 font-black px-2 py-0.5 rounded">隊長已認證</span>
+        <span class="text-[10px] bg-yellow-500 text-slate-950 font-black px-2 py-0.5 rounded">隊長專用</span>
       </div>
 
       <!-- 手動新增賽事面板 -->
@@ -107,7 +103,7 @@
           <h3 class="text-xs font-black text-yellow-400 flex items-center gap-1.5">
             <span>➕</span> 新增賽程 / 補入已完賽紀錄
           </h3>
-          <span class="text-[10px] text-slate-400">正式 / 友賽 / 練習</span>
+          <span class="text-[10px] text-slate-400">比賽 / 友賽 / 練習</span>
         </div>
 
         <!-- 賽事性質切換 -->
@@ -138,7 +134,7 @@
         <div class="grid grid-cols-2 gap-2 text-xs">
           <div>
             <label class="text-[11px] text-slate-400 block mb-1">輪次 / 名稱</label>
-            <input type="text" id="newRound" placeholder="例如: 1 或 季前熱身" class="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-200">
+            <input type="text" id="newRound" placeholder="例如: 1 或 友誼熱身" class="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-200">
           </div>
           <div>
             <label class="text-[11px] text-slate-400 block mb-1">主場 / 客場</label>
@@ -150,14 +146,14 @@
         </div>
 
         <div>
-          <label class="text-[11px] font-bold text-slate-300 block mb-1">比賽日期與時間 (清晰大字顯示)</label>
+          <label class="text-[11px] font-bold text-slate-300 block mb-1">比賽日期與時間 (特大清晰顯示)</label>
           <input type="text" id="newDate" placeholder="例如: 2026-03-25 (三) 20:30" class="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-xs font-bold text-yellow-300 focus:outline-none focus:border-yellow-400">
         </div>
 
         <div class="grid grid-cols-2 gap-2 text-xs">
           <div>
-            <label class="text-[11px] text-slate-400 block mb-1">對手名稱 (練習可填隊名)</label>
-            <input type="text" id="newOpponent" placeholder="例如: Bullseye" class="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-200">
+            <label class="text-[11px] text-slate-400 block mb-1">對手隊伍名稱</label>
+            <input type="text" id="newOpponent" placeholder="例如: Bullseye Team" class="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-200">
           </div>
           <div>
             <label class="text-[11px] text-slate-400 block mb-1">比賽地點 (鏢吧名稱)</label>
@@ -165,7 +161,7 @@
           </div>
         </div>
 
-        <!-- 補入已進行賽事選項 -->
+        <!-- 補入已完賽賽事選項 -->
         <div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700 space-y-2">
           <label class="flex items-center gap-2 cursor-pointer">
             <input type="checkbox" id="newIsFinishedCheck" onchange="togglePastMatchFields(this.checked)" class="w-4 h-4 rounded text-rose-600 focus:ring-0">
@@ -175,7 +171,7 @@
           <div id="pastScoreFieldWrapper" class="hidden pt-1">
             <label class="text-[11px] text-amber-400 block mb-1 font-bold">最終賽果比分：</label>
             <input type="text" id="newScore" placeholder="例如: 5-4 或 勝出" class="w-full p-2 rounded-lg bg-slate-900 border border-amber-500/50 text-xs text-yellow-300 font-black">
-            <p class="text-[10px] text-slate-400 mt-1">※ 新增後，隊長可直接在排陣選取「全隊任何隊友」作成績記錄。</p>
+            <p class="text-[10px] text-slate-400 mt-1">※ 建立後隊長可直接在排陣指派「全隊任何隊友」作陣容紀錄。</p>
           </div>
         </div>
 
@@ -380,39 +376,32 @@
 
     let editingLegs = [];
 
-    // 帶逾時保護的 fetch 請求
     async function apiRequest(method, payload = {}) {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15秒超時
-
       try {
         let res;
         if (method === 'GET') {
           const query = new URLSearchParams(payload).toString();
-          res = await fetch(`${API_URL}?${query}`, { signal: controller.signal });
+          res = await fetch(`${API_URL}?${query}`);
         } else {
           res = await fetch(API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify(payload),
-            redirect: 'follow',
-            signal: controller.signal
+            redirect: 'follow'
           });
         }
-        clearTimeout(timeoutId);
         return await res.json();
       } catch (err) {
-        clearTimeout(timeoutId);
-        return { success: false, error: err.name === 'AbortError' ? '連線逾時，請檢查網絡' : err.toString() };
+        return { success: false, error: err.toString() };
       }
     }
 
     window.addEventListener('DOMContentLoaded', () => {
       checkAuthState();
-      loadInitialData(); // 一鍵載入核心資料
+      loadMatches();
     });
 
-    // 嚴格身分權限驗證
+    // 嚴格身分驗證：未登入絕不顯示後台按鈕
     function checkAuthState() {
       const authSec = document.getElementById('authSection');
       const userInfo = document.getElementById('userInfo');
@@ -420,7 +409,6 @@
       const adminTab = document.getElementById('tab-admin');
 
       if (currentUser && currentUser.role === 'admin') {
-        // 隊長登入成功
         if (authSec) authSec.classList.add('hidden');
         if (userInfo) {
           userInfo.innerHTML = `
@@ -430,7 +418,6 @@
         }
         if (adminBtn) adminBtn.classList.remove('hidden');
       } else if (currentUser) {
-        // 普通隊員登入
         if (authSec) authSec.classList.add('hidden');
         if (userInfo) {
           userInfo.innerHTML = `
@@ -441,7 +428,6 @@
         if (adminBtn) adminBtn.classList.add('hidden');
         if (adminTab) adminTab.classList.add('hidden');
       } else {
-        // 未登入：徹底隱藏所有隊長按鈕及管理分頁
         if (authSec) authSec.classList.remove('hidden');
         if (userInfo) userInfo.innerText = '尚未登入';
         if (adminBtn) adminBtn.classList.add('hidden');
@@ -449,11 +435,11 @@
       }
     }
 
-    // 分頁切換（嚴格攔截未授權存取隊長後台）
+    // 嚴格阻截未授權進入後台
     function switchTab(tabId) {
       if (tabId === 'admin') {
         if (!currentUser || currentUser.role !== 'admin') {
-          alert('⚠️ 權限不足：只有隊長帳號登入後才可查看隊長管理後台！');
+          alert('⚠️ 只有隊長有權限進入此頁面，請先以隊長帳號登入！');
           return;
         }
       }
@@ -514,7 +500,7 @@
           currentUser = res.user;
           localStorage.setItem('dart_user', JSON.stringify(currentUser));
           checkAuthState();
-          loadInitialData();
+          loadMatches();
         } else {
           alert(res.message || '登入失敗，請確認電郵密碼');
         }
@@ -526,168 +512,163 @@
       currentUser = null;
       checkAuthState();
       switchTab('matches');
-      loadInitialData();
+      loadMatches();
     }
 
     function togglePastMatchFields(checked) {
       document.getElementById('pastScoreFieldWrapper').classList.toggle('hidden', !checked);
     }
 
-    // 核心升級：一鍵式連線獲取賽程與設定 (速度快 3 倍，帶超時容錯)
-    async function loadInitialData() {
+    // 核心修復：安全解析賽事，徹底消除型態報錯卡死
+    async function loadMatches() {
       const container = document.getElementById('matchesContainer');
       const badge = document.getElementById('currentTeamBadge');
-      
-      container.innerHTML = `
-        <div class="text-center py-10 bg-slate-900/60 rounded-3xl border border-slate-800">
-          <div class="inline-block animate-spin text-2xl mb-2">⏳</div>
-          <p class="text-xs text-slate-300 font-medium">正在極速載入賽程中...</p>
-        </div>
-      `;
+      if (container) container.innerHTML = '<p class="text-xs text-slate-400 text-center py-6">正在載入賽事資料...</p>';
 
-      const res = await apiRequest('GET', { action: 'getInitialData' });
+      try {
+        const json = await apiRequest('GET', { action: 'getMatches' });
+        const setRes = await apiRequest('GET', { action: 'getSettings' });
 
-      if (!res.success) {
-        container.innerHTML = `
-          <div class="text-center py-8 bg-slate-900 rounded-3xl border border-rose-900/60 p-4">
-            <span class="text-3xl block mb-2">⚠️</span>
-            <p class="text-rose-400 font-bold text-xs mb-1">載入賽程失敗</p>
-            <p class="text-[11px] text-slate-400 mb-3">${res.error || '無法連線到資料庫，請檢查網絡連線'}</p>
-            <button onclick="loadInitialData()" class="bg-slate-800 hover:bg-slate-700 text-xs px-3 py-1.5 rounded-lg border border-slate-700 font-bold">重新嘗試</button>
-          </div>
-        `;
-        return;
-      }
-
-      // 套用隊名與設定
-      if (res.settings) {
-        if (badge) badge.innerText = `${res.settings.teamName || '我的飛鏢隊'}`;
-        if (res.settings.legFormat) {
-          try { editingLegs = JSON.parse(res.settings.legFormat); } catch(e) {}
-        }
-      }
-
-      // 只有隊長登入時才初始化後台賽制介面
-      if (currentUser && currentUser.role === 'admin') {
-        renderLegsEditor();
-      }
-
-      renderMatchesList(res.matches || []);
-    }
-
-    // 渲染賽程卡片（根據登入狀態嚴格過濾隊長按鈕）
-    function renderMatchesList(matches) {
-      const container = document.getElementById('matchesContainer');
-      const isAdmin = (currentUser && currentUser.role === 'admin');
-
-      if (matches.length === 0) {
-        container.innerHTML = `
-          <div class="text-center py-12 bg-slate-900 rounded-3xl border border-slate-800">
-            <span class="text-3xl block mb-2">🎯</span>
-            <p class="text-slate-400 text-xs mb-3 font-medium">目前尚無任何賽程記錄</p>
-            ${isAdmin ? `
-              <button onclick="switchTab('admin')" class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl font-bold cursor-pointer">前往隊長後台新增賽程</button>
-            ` : '<p class="text-[11px] text-slate-500">等待隊長發布賽程</p>'}
-          </div>
-        `;
-        return;
-      }
-
-      container.innerHTML = matches.map(m => {
-        const isFinished = m.score && String(m.score).trim() !== '';
-
-        let typeBadge = '<span class="text-[10px] bg-rose-950 text-rose-300 border border-rose-800 px-2.5 py-0.5 rounded-full font-bold">🏆 正式聯賽</span>';
-        if (m.type === 'friendly') {
-          typeBadge = '<span class="text-[10px] bg-cyan-950 text-cyan-300 border border-cyan-800 px-2.5 py-0.5 rounded-full font-bold">🤝 友誼對抗賽</span>';
-        } else if (m.type === 'practice') {
-          typeBadge = '<span class="text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-800 px-2.5 py-0.5 rounded-full font-bold">🎯 普通例行練習</span>';
+        if (setRes && setRes.success && setRes.settings) {
+          if (badge) badge.innerText = setRes.settings.teamName || '我的飛鏢隊';
+          if (setRes.settings.legFormat) {
+            try { editingLegs = JSON.parse(setRes.settings.legFormat); } catch(e) {}
+          }
         }
 
-        return `
-          <div class="bg-slate-900 p-4 rounded-3xl border ${isFinished ? 'border-slate-800' : 'border-slate-700/80'} space-y-3 shadow-xl relative overflow-hidden">
-            <div class="flex justify-between items-center">
-              <div class="flex items-center gap-1.5">
-                ${typeBadge}
-                <span class="text-[10px] bg-slate-800 text-slate-300 px-2.5 py-0.5 rounded-full font-mono font-bold">
-                  ${m.round ? (m.round.includes('輪') ? m.round : `第 ${m.round} 輪`) : '特別賽事'}
-                </span>
-                <span class="text-[10px] ${m.isHome ? 'bg-indigo-600 text-white' : 'bg-slate-700 text-slate-300'} px-2 py-0.5 rounded-full font-bold">
-                  ${m.isHome ? '主場' : '客場'}
-                </span>
-              </div>
-              ${isFinished ? `
-                <span class="text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 px-2.5 py-0.5 rounded-full font-black">
-                  完賽 (${m.score})
-                </span>
-              ` : `
-                <span class="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2.5 py-0.5 rounded-full font-bold">
-                  進行中 / 未完賽
-                </span>
-              `}
-            </div>
+        if (currentUser && currentUser.role === 'admin') {
+          renderLegsEditor();
+        }
 
-            <!-- 特大清晰日期顯示 -->
-            <div class="bg-slate-950/80 p-3 rounded-2xl border border-slate-800/80 flex items-center gap-3">
-              <div class="text-2xl p-2 bg-slate-900 rounded-xl border border-slate-800">📅</div>
-              <div class="flex-1">
-                <div class="text-base sm:text-lg font-black text-yellow-300 tracking-wide font-mono">
-                  ${m.date || '日期未定'}
-                </div>
-                <div class="text-xs text-slate-300 font-medium flex items-center gap-1 mt-0.5">
-                  <span class="text-slate-500">📍</span> ${m.venue || '官方指定鏢吧'}
-                </div>
+        if (!json || !json.success || !json.matches || json.matches.length === 0) {
+          if (container) {
+            container.innerHTML = `
+              <div class="text-center py-12 bg-slate-900 rounded-3xl border border-slate-800">
+                <span class="text-3xl block mb-2">🎯</span>
+                <p class="text-slate-400 text-xs mb-3 font-medium">目前尚無任何賽程記錄</p>
+                ${(currentUser && currentUser.role === 'admin') ? `
+                  <button onclick="switchTab('admin')" class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl font-bold cursor-pointer">前往隊長後台新增賽程</button>
+                ` : '<p class="text-[11px] text-slate-500">等待隊長發布賽程</p>'}
               </div>
-            </div>
+            `;
+          }
+          return;
+        }
 
-            <div class="flex justify-between items-center px-1">
-              <div>
-                <span class="text-[11px] text-slate-400 font-medium block">對賽隊伍</span>
-                <h3 class="font-black text-lg text-white">VS ${m.opponent}</h3>
+        const isAdmin = (currentUser && currentUser.role === 'admin');
+
+        container.innerHTML = json.matches.map(m => {
+          const isFinished = m.score && String(m.score).trim() !== '';
+
+          // 安全字串轉換，防範數字型態報錯崩潰
+          const rawRound = m.round ? String(m.round) : '';
+          const roundText = rawRound ? (rawRound.includes('輪') ? rawRound : `第 ${rawRound} 輪`) : '特別賽事';
+          const matchType = String(m.type || 'match');
+
+          let typeBadge = '<span class="text-[10px] bg-rose-950 text-rose-300 border border-rose-800 px-2.5 py-0.5 rounded-full font-bold">🏆 正式聯賽</span>';
+          if (matchType === 'friendly') {
+            typeBadge = '<span class="text-[10px] bg-cyan-950 text-cyan-300 border border-cyan-800 px-2.5 py-0.5 rounded-full font-bold">🤝 友誼對抗賽</span>';
+          } else if (matchType === 'practice') {
+            typeBadge = '<span class="text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-800 px-2.5 py-0.5 rounded-full font-bold">🎯 普通例行練習</span>';
+          }
+
+          return `
+            <div class="bg-slate-900 p-4 rounded-3xl border ${isFinished ? 'border-slate-800' : 'border-slate-700/80'} space-y-3 shadow-xl relative overflow-hidden">
+              <div class="flex justify-between items-center">
+                <div class="flex items-center gap-1.5">
+                  ${typeBadge}
+                  <span class="text-[10px] bg-slate-800 text-slate-300 px-2.5 py-0.5 rounded-full font-mono font-bold">
+                    ${roundText}
+                  </span>
+                  <span class="text-[10px] ${m.isHome ? 'bg-indigo-600 text-white' : 'bg-slate-700 text-slate-300'} px-2 py-0.5 rounded-full font-bold">
+                    ${m.isHome ? '主場' : '客場'}
+                  </span>
+                </div>
+                ${isFinished ? `
+                  <span class="text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 px-2.5 py-0.5 rounded-full font-black">
+                    完賽 (${m.score})
+                  </span>
+                ` : `
+                  <span class="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2.5 py-0.5 rounded-full font-bold">
+                    進行中 / 未完賽
+                  </span>
+                `}
               </div>
-              ${isFinished ? `
-                <div class="text-right">
-                  <span class="text-[10px] text-slate-400 block font-medium">總比分</span>
-                  <span class="text-xl font-black text-yellow-400 font-mono tracking-wider">${m.score}</span>
+
+              <!-- 特大日期與時間顯示 -->
+              <div class="bg-slate-950/80 p-3 rounded-2xl border border-slate-800/80 flex items-center gap-3">
+                <div class="text-2xl p-2 bg-slate-900 rounded-xl border border-slate-800">📅</div>
+                <div class="flex-1">
+                  <div class="text-base sm:text-lg font-black text-yellow-300 tracking-wide font-mono">
+                    ${m.date || '日期未定'}
+                  </div>
+                  <div class="text-xs text-slate-300 font-medium flex items-center gap-1 mt-0.5">
+                    <span class="text-slate-500">📍</span> ${m.venue || '官方指定鏢吧'}
+                  </div>
+                </div>
+              </div>
+
+              <div class="flex justify-between items-center px-1">
+                <div>
+                  <span class="text-[11px] text-slate-400 font-medium block">對賽隊伍</span>
+                  <h3 class="font-black text-lg text-white">VS ${m.opponent}</h3>
+                </div>
+                ${isFinished ? `
+                  <div class="text-right">
+                    <span class="text-[10px] text-slate-400 block font-medium">總比分</span>
+                    <span class="text-xl font-black text-yellow-400 font-mono tracking-wider">${m.score}</span>
+                  </div>
+                ` : ''}
+              </div>
+
+              <div class="flex items-center gap-3 bg-slate-950/60 p-2.5 rounded-2xl text-[11px] border border-slate-800/60">
+                <span class="text-emerald-400 font-bold">出席: ${m.counts ? m.counts.attending : 0}</span>
+                <span class="text-amber-400 font-bold">遲到: ${m.counts ? m.counts.late : 0}</span>
+                <span class="text-rose-400 font-bold">缺席: ${m.counts ? m.counts.absent : 0}</span>
+                <button onclick="viewMatchDetails('${m.id}', '${m.opponent}', '${m.venue}', '${m.score || ''}')" class="ml-auto text-indigo-400 hover:text-indigo-300 underline font-bold cursor-pointer">
+                  名單/排陣 ↗
+                </button>
+              </div>
+
+              ${!isFinished ? `
+                <div class="grid grid-cols-3 gap-2 pt-1 border-t border-slate-800/80">
+                  <button onclick="submitAttendance('${m.id}', 'attending')" class="bg-emerald-600/90 hover:bg-emerald-500 py-2 rounded-xl text-xs font-bold transition cursor-pointer shadow">出席 👍</button>
+                  <button onclick="submitAttendance('${m.id}', 'late')" class="bg-amber-600/90 hover:bg-amber-500 py-2 rounded-xl text-xs font-bold transition cursor-pointer shadow">遲到 ⏰</button>
+                  <button onclick="submitAttendance('${m.id}', 'absent')" class="bg-rose-600/90 hover:bg-rose-500 py-2 rounded-xl text-xs font-bold transition cursor-pointer shadow">缺席 ❌</button>
+                </div>
+              ` : ''}
+
+              <!-- 嚴格限制：僅隊長可見排陣及比分修改操作 -->
+              ${isAdmin ? `
+                <div class="pt-2 border-t border-slate-800 space-y-2">
+                  <button onclick="openLineupModal('${m.id}', '${m.opponent}', ${isFinished ? 'true' : 'false'})" class="w-full bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-slate-950 font-black py-2 rounded-xl text-xs transition cursor-pointer shadow flex items-center justify-center gap-1.5">
+                    <span>🎯</span> 隊長排陣 / 成績指派 ${isFinished ? '(全隊名單)' : '(限出席隊友)'}
+                  </button>
+                  <div class="flex gap-2">
+                    <button onclick="promptUpdateScore('${m.id}', '${m.score || ''}')" class="flex-1 bg-slate-800 hover:bg-slate-700 text-yellow-300 py-1.5 rounded-xl text-xs font-bold border border-slate-700 transition cursor-pointer">
+                      ✏️ ${isFinished ? '修改最終比分' : '輸入比分 (結算完賽)'}
+                    </button>
+                    <button onclick="deleteMatch('${m.id}')" title="刪除此場賽事" class="bg-rose-950 hover:bg-rose-900 text-rose-300 border border-rose-800 px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer">
+                      🗑️ 刪除
+                    </button>
+                  </div>
                 </div>
               ` : ''}
             </div>
-
-            <div class="flex items-center gap-3 bg-slate-950/60 p-2.5 rounded-2xl text-[11px] border border-slate-800/60">
-              <span class="text-emerald-400 font-bold">出席: ${m.counts ? m.counts.attending : 0}</span>
-              <span class="text-amber-400 font-bold">遲到: ${m.counts ? m.counts.late : 0}</span>
-              <span class="text-rose-400 font-bold">缺席: ${m.counts ? m.counts.absent : 0}</span>
-              <button onclick="viewMatchDetails('${m.id}', '${m.opponent}', '${m.venue}', '${m.score || ''}')" class="ml-auto text-indigo-400 hover:text-indigo-300 underline font-bold cursor-pointer">
-                名單/排陣 ↗
-              </button>
+          `;
+        }).join('');
+      } catch (err) {
+        console.error(err);
+        if (container) {
+          container.innerHTML = `
+            <div class="text-center py-8 bg-slate-900 rounded-3xl border border-rose-900/50 p-4">
+              <p class="text-rose-400 text-xs font-bold mb-1">連線發生問題</p>
+              <p class="text-slate-400 text-[11px] mb-3">${err.message || '請確認網絡連線'}</p>
+              <button onclick="loadMatches()" class="text-xs bg-slate-800 px-3 py-1.5 rounded border border-slate-700 font-bold">重新嘗試</button>
             </div>
-
-            ${!isFinished ? `
-              <div class="grid grid-cols-3 gap-2 pt-1 border-t border-slate-800/80">
-                <button onclick="submitAttendance('${m.id}', 'attending')" class="bg-emerald-600/90 hover:bg-emerald-500 py-2 rounded-xl text-xs font-bold transition cursor-pointer shadow">出席 👍</button>
-                <button onclick="submitAttendance('${m.id}', 'late')" class="bg-amber-600/90 hover:bg-amber-500 py-2 rounded-xl text-xs font-bold transition cursor-pointer shadow">遲到 ⏰</button>
-                <button onclick="submitAttendance('${m.id}', 'absent')" class="bg-rose-600/90 hover:bg-rose-500 py-2 rounded-xl text-xs font-bold transition cursor-pointer shadow">缺席 ❌</button>
-              </div>
-            ` : ''}
-
-            <!-- 隊長專用操作 (只有以隊長登入時才會出現) -->
-            ${isAdmin ? `
-              <div class="pt-2 border-t border-slate-800 space-y-2">
-                <button onclick="openLineupModal('${m.id}', '${m.opponent}', ${isFinished})" class="w-full bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-slate-950 font-black py-2 rounded-xl text-xs transition cursor-pointer shadow flex items-center justify-center gap-1.5">
-                  <span>🎯</span> 隊長排陣 / 成績指派 ${isFinished ? '(全隊名單)' : '(限出席隊友)'}
-                </button>
-                <div class="flex gap-2">
-                  <button onclick="promptUpdateScore('${m.id}', '${m.score || ''}')" class="flex-1 bg-slate-800 hover:bg-slate-700 text-yellow-300 py-1.5 rounded-xl text-xs font-bold border border-slate-700 transition cursor-pointer">
-                    ✏️ ${isFinished ? '修改最終比分' : '輸入比分 (結算完賽)'}
-                  </button>
-                  <button onclick="deleteMatch('${m.id}')" title="刪除此場賽事" class="bg-rose-950 hover:bg-rose-900 text-rose-300 border border-rose-800 px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer">
-                    🗑️ 刪除
-                  </button>
-                </div>
-              </div>
-            ` : ''}
-          </div>
-        `;
-      }).join('');
+          `;
+        }
+      }
     }
 
     async function submitNewMatch() {
@@ -718,7 +699,7 @@
       document.getElementById('newIsFinishedCheck').checked = false;
       togglePastMatchFields(false);
 
-      loadInitialData();
+      loadMatches();
       switchTab('matches');
     }
 
@@ -727,21 +708,21 @@
       if (score === null) return;
       const res = await apiRequest('POST', { action: 'updateScore', matchId, score: score.trim() });
       alert(res.message || '比分已更新！');
-      loadInitialData();
+      loadMatches();
     }
 
     async function deleteMatch(matchId) {
       if (!confirm('確定要刪除這場賽事嗎？此動作無法復原！')) return;
       const res = await apiRequest('POST', { action: 'deleteMatch', matchId });
       alert(res.message || '已刪除！');
-      loadInitialData();
+      loadMatches();
     }
 
     async function submitAttendance(matchId, status) {
       if (!currentUser) return alert('請先登入！');
       const res = await apiRequest('POST', { action: 'checkIn', matchId, userId: currentUser.id, status });
       alert(res.message || '已送出！');
-      loadInitialData();
+      loadMatches();
     }
 
     /* ----------------------------------------------------
@@ -836,7 +817,7 @@
       btn.innerText = '💾 儲存並套用賽制';
       btn.disabled = false;
       alert(res.message || '賽制已更新！');
-      loadInitialData();
+      loadMatches();
     }
 
     /* ----------------------------------------------------
@@ -1041,7 +1022,7 @@
       const res = await apiRequest('POST', { action: 'saveLineup', matchId: currentLineupMatchId, lineup: lineup });
       alert(res.message || '排陣已更新發布！');
       closeModal('lineupModal');
-      loadInitialData();
+      loadMatches();
     }
 
     async function loadStats() {
