@@ -74,6 +74,40 @@
     <section id="tab-admin" class="hidden space-y-4">
       <h2 class="text-sm font-bold text-yellow-400">隊長專屬後台</h2>
 
+      <!-- 賽季賽制設定 -->
+      <div class="bg-slate-800 p-4 rounded-xl border border-indigo-500/50 space-y-3 shadow-lg">
+        <div class="flex justify-between items-center">
+          <h3 class="text-xs font-bold text-indigo-400 flex items-center gap-1">
+            <span>⚙️</span> 賽季對賽賽制設定
+          </h3>
+          <span id="currentLegsCountBadge" class="text-[10px] bg-indigo-900 text-indigo-300 px-2 py-0.5 rounded font-bold">共 9 場</span>
+        </div>
+        
+        <div>
+          <label class="text-[11px] text-slate-400 block mb-1">快速套用標準聯賽預設：</label>
+          <select id="presetSelect" onchange="selectPreset(this.value)" class="w-full p-2 rounded bg-slate-700 border border-slate-600 text-xs text-slate-200">
+            <option value="phoenix9">🎯 Phoenix 聯賽標準 9 場制 (3單 4雙 1三人 1隊制)</option>
+            <option value="standard7">⚡ 傳統 7 場制 (3單 3雙 1隊制)</option>
+            <option value="cup5">🏆 精簡 5 場制 (2單 2雙 1隊制)</option>
+            <option value="custom">✏️ 自訂賽制格式</option>
+          </select>
+        </div>
+
+        <!-- 各 Leg 細節編輯列表 -->
+        <div class="space-y-1.5 max-h-56 overflow-y-auto p-2 bg-slate-900/50 rounded-lg border border-slate-700/60" id="legsConfigList">
+          <!-- 動態生成 Leg 輸入項目 -->
+        </div>
+
+        <div class="flex gap-2">
+          <button type="button" onclick="addNewLegRow()" class="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-200 py-1.5 rounded text-xs font-semibold cursor-pointer">
+            ➕ 增加 1 場 (Leg)
+          </button>
+          <button type="button" onclick="saveSeasonFormat()" id="saveFormatBtn" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-1.5 rounded text-xs cursor-pointer shadow">
+            💾 儲存並套用賽制
+          </button>
+        </div>
+      </div>
+
       <!-- 手動新增賽事面板 -->
       <div class="bg-slate-800 p-4 rounded-xl border border-yellow-500/50 space-y-3 shadow-lg">
         <h3 class="text-xs font-bold text-yellow-400 flex items-center gap-1">
@@ -113,7 +147,7 @@
       <div class="bg-slate-800 p-3.5 rounded-xl border border-slate-700 text-xs text-slate-300 space-y-1.5 shadow">
         <p class="font-bold text-yellow-400">💡 批量加入全季賽事極速方法：</p>
         <p class="text-[11px] text-slate-400 leading-relaxed">
-          若要一次過入全季十幾場：直接用電腦在官網賽程表格按複製 (Ctrl+C)，然後打開你的 <b>Google Sheet (Matches 分頁)</b> 第一個空白列按貼上 (Ctrl+V)，表格會自動分行分格，重新整理本頁面即刻全部載入！
+          若要一次過入全季十幾場：直接用電腦在官網賽程表格按複製 (Ctrl+C)，然後打開你的 <b>Google Sheet (Matches 分頁)</b> 第一個空白列按貼上 (Ctrl+V)，重新整理即刻同步全季！
         </p>
       </div>
 
@@ -126,7 +160,7 @@
 
   </div>
 
-  <!-- Modal 1：查看 9 場陣容 & 簽到名單 -->
+  <!-- Modal 1：查看對賽排陣 & 簽到名單 -->
   <div id="detailModal" class="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 hidden">
     <div class="bg-slate-800 rounded-2xl max-w-lg w-full max-h-[85vh] flex flex-col border border-slate-700 shadow-2xl">
       <div class="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-900/40">
@@ -138,7 +172,10 @@
       </div>
       <div class="p-4 overflow-y-auto space-y-4 text-xs">
         <div>
-          <h4 class="font-bold text-yellow-400 text-xs mb-2">🎯 9 場對賽排陣</h4>
+          <h4 class="font-bold text-yellow-400 text-xs mb-2 flex items-center justify-between">
+            <span>🎯 各場出賽排陣</span>
+            <span id="modalLegCountTag" class="text-[10px] text-slate-400 font-normal"></span>
+          </h4>
           <div id="modalLineupList" class="space-y-1.5 bg-slate-900/60 p-2.5 rounded-xl border border-slate-700/60">載入中...</div>
         </div>
         <div>
@@ -149,19 +186,19 @@
     </div>
   </div>
 
-  <!-- Modal 2：隊長 9 場排陣 Modal -->
+  <!-- Modal 2：隊長排陣 Modal -->
   <div id="lineupModal" class="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 hidden">
     <div class="bg-slate-800 rounded-2xl max-w-lg w-full max-h-[90vh] flex flex-col border border-yellow-500/50 shadow-2xl">
       <div class="p-4 border-b border-slate-700 flex justify-between items-center bg-yellow-500/10">
         <div>
-          <h3 class="text-sm font-bold text-yellow-400">🎯 隊長 9 場排陣系統</h3>
-          <p class="text-[11px] text-slate-300">只允許安排【已簽到出席 / 遲到】之隊友</p>
+          <h3 class="text-sm font-bold text-yellow-400" id="lineupModalHeaderTitle">🎯 隊長排陣系統</h3>
+          <p class="text-[11px] text-slate-300">只允許安排【已簽到出席 / 遲到】之隊友出戰</p>
         </div>
         <button onclick="closeModal('lineupModal')" class="text-slate-400 hover:text-white text-lg font-bold cursor-pointer">&times;</button>
       </div>
       <div class="p-4 overflow-y-auto space-y-3.5 text-xs" id="lineupLegsContainer"></div>
       <div class="p-4 border-t border-slate-700 bg-slate-800">
-        <button onclick="submitLineup()" class="w-full bg-yellow-500 hover:bg-yellow-400 text-slate-900 font-bold p-2.5 rounded text-xs transition cursor-pointer">儲存並公開 9 場陣容</button>
+        <button onclick="submitLineup()" class="w-full bg-yellow-500 hover:bg-yellow-400 text-slate-900 font-bold p-2.5 rounded text-xs transition cursor-pointer">儲存並公開對賽陣容</button>
       </div>
     </div>
   </div>
@@ -181,6 +218,40 @@
     let currentLineupMatchId = null;
     let currentAvailablePlayers = [];
     let currentLegFormat = [];
+
+    // 常用賽制預設模組
+    const PRESETS = {
+      phoenix9: [
+        { name: "Leg 1: 單打 (Singles)", count: 1 },
+        { name: "Leg 2: 單打 (Singles)", count: 1 },
+        { name: "Leg 3: 雙打 (Doubles)", count: 2 },
+        { name: "Leg 4: 雙打 (Doubles)", count: 2 },
+        { name: "Leg 5: 單打 (Singles)", count: 1 },
+        { name: "Leg 6: 雙打 (Doubles)", count: 2 },
+        { name: "Leg 7: 雙打 (Doubles)", count: 2 },
+        { name: "Leg 8: 三人賽 (Trios)", count: 3 },
+        { name: "Leg 9: 隊制四人賽 (Gallon)", count: 4 }
+      ],
+      standard7: [
+        { name: "Leg 1: 單打 (Singles)", count: 1 },
+        { name: "Leg 2: 單打 (Singles)", count: 1 },
+        { name: "Leg 3: 雙打 (Doubles)", count: 2 },
+        { name: "Leg 4: 雙打 (Doubles)", count: 2 },
+        { name: "Leg 5: 單打 (Singles)", count: 1 },
+        { name: "Leg 6: 雙打 (Doubles)", count: 2 },
+        { name: "Leg 7: 隊制四人賽 (Gallon)", count: 4 }
+      ],
+      cup5: [
+        { name: "Leg 1: 單打 (Singles)", count: 1 },
+        { name: "Leg 2: 單打 (Singles)", count: 1 },
+        { name: "Leg 3: 雙打 (Doubles)", count: 2 },
+        { name: "Leg 4: 雙打 (Doubles)", count: 2 },
+        { name: "Leg 5: 隊制四人賽 (Gallon)", count: 4 }
+      ]
+    };
+
+    // 編輯中的賽制結構
+    let editingLegs = [];
 
     async function apiRequest(method, payload = {}) {
       try {
@@ -205,6 +276,7 @@
     window.addEventListener('DOMContentLoaded', () => {
       checkAuthState();
       loadMatches();
+      loadSeasonSettings();
     });
 
     function checkAuthState() {
@@ -359,17 +431,15 @@
               </button>
             </div>
 
-            <!-- 隊員簽到按鈕 -->
             <div class="grid grid-cols-3 gap-2 pt-1 border-t border-slate-700/60">
               <button onclick="submitAttendance('${m.id}', 'attending')" class="bg-emerald-600 hover:bg-emerald-500 py-1.5 rounded text-xs font-semibold cursor-pointer">出席 👍</button>
               <button onclick="submitAttendance('${m.id}', 'late')" class="bg-amber-600 hover:bg-amber-500 py-1.5 rounded text-xs font-semibold cursor-pointer">遲到 ⏰</button>
               <button onclick="submitAttendance('${m.id}', 'absent')" class="bg-rose-600 hover:bg-rose-500 py-1.5 rounded text-xs font-semibold cursor-pointer">缺席 ❌</button>
             </div>
 
-            <!-- 隊長專用操作按鈕 -->
             ${isAdmin ? `
               <div class="pt-1.5 border-t border-slate-700/40 space-y-2">
-                <button onclick="openLineupModal('${m.id}', '${m.opponent}')" class="w-full bg-yellow-500 hover:bg-yellow-400 text-slate-900 font-bold py-1.5 rounded text-xs cursor-pointer">🎯 隊長 9 場排陣 (限出席隊友)</button>
+                <button onclick="openLineupModal('${m.id}', '${m.opponent}')" class="w-full bg-yellow-500 hover:bg-yellow-400 text-slate-900 font-bold py-1.5 rounded text-xs cursor-pointer">🎯 隊長賽事排陣 (限出席隊友)</button>
                 <div class="flex gap-2">
                   <button onclick="promptUpdateScore('${m.id}', '${m.score || ''}')" class="flex-1 bg-slate-700 hover:bg-slate-600 text-yellow-300 py-1.5 rounded text-xs font-semibold cursor-pointer">
                     ✏️ ${isFinished ? '修改比分' : '輸入比分 (完賽)'}
@@ -434,11 +504,95 @@
       loadMatches();
     }
 
+    /* ----------------------------------------------------
+       賽季賽制設定 (Format Management) 邏輯
+    ---------------------------------------------------- */
+    async function loadSeasonSettings() {
+      const res = await apiRequest('GET', { action: 'getSettings' });
+      if (res.success && res.settings && res.settings.legFormat) {
+        try {
+          editingLegs = JSON.parse(res.settings.legFormat);
+        } catch(e) {
+          editingLegs = PRESETS.phoenix9;
+        }
+      } else {
+        editingLegs = PRESETS.phoenix9;
+      }
+      renderLegsEditor();
+    }
+
+    function selectPreset(presetKey) {
+      if (presetKey === 'custom') return;
+      if (PRESETS[presetKey]) {
+        editingLegs = JSON.parse(JSON.stringify(PRESETS[presetKey]));
+        renderLegsEditor();
+      }
+    }
+
+    function renderLegsEditor() {
+      const container = document.getElementById('legsConfigList');
+      const badge = document.getElementById('currentLegsCountBadge');
+      if (badge) badge.innerText = `共 ${editingLegs.length} 場`;
+      if (!container) return;
+
+      container.innerHTML = editingLegs.map((leg, idx) => `
+        <div class="flex items-center gap-1.5 bg-slate-800 p-1.5 rounded border border-slate-700">
+          <span class="text-[10px] text-yellow-400 font-mono font-bold w-6 text-center">#${idx + 1}</span>
+          <input type="text" value="${leg.name}" onchange="updateLegField(${idx}, 'name', this.value)" class="flex-1 bg-slate-700 text-slate-100 text-[11px] p-1.5 rounded border border-slate-600 focus:outline-none focus:border-indigo-400">
+          <select onchange="updateLegField(${idx}, 'count', parseInt(this.value))" class="bg-slate-700 text-slate-200 text-[11px] p-1.5 rounded border border-slate-600">
+            <option value="1" ${leg.count === 1 ? 'selected' : ''}>1人 (單)</option>
+            <option value="2" ${leg.count === 2 ? 'selected' : ''}>2人 (雙)</option>
+            <option value="3" ${leg.count === 3 ? 'selected' : ''}>3人 (三)</option>
+            <option value="4" ${leg.count === 4 ? 'selected' : ''}>4人 (隊)</option>
+          </select>
+          <button type="button" onclick="removeLegRow(${idx})" class="text-rose-400 hover:text-rose-300 px-1 text-xs font-bold cursor-pointer">&times;</button>
+        </div>
+      `).join('');
+    }
+
+    function updateLegField(idx, field, value) {
+      if (editingLegs[idx]) {
+        editingLegs[idx][field] = value;
+      }
+    }
+
+    function addNewLegRow() {
+      editingLegs.push({
+        name: `Leg ${editingLegs.length + 1}: 自訂比賽`,
+        count: 1
+      });
+      renderLegsEditor();
+    }
+
+    function removeLegRow(idx) {
+      if (editingLegs.length <= 1) return alert('賽制至少需有 1 場比賽！');
+      editingLegs.splice(idx, 1);
+      renderLegsEditor();
+    }
+
+    async function saveSeasonFormat() {
+      const btn = document.getElementById('saveFormatBtn');
+      btn.innerText = '儲存中...';
+      btn.disabled = true;
+
+      const res = await apiRequest('POST', {
+        action: 'saveLegFormat',
+        legFormat: editingLegs
+      });
+
+      btn.innerText = '💾 儲存並套用賽制';
+      btn.disabled = false;
+      alert(res.message || '賽制已更新！');
+    }
+
+    /* ----------------------------------------------------
+       排陣視窗 & 簽到詳情
+    ---------------------------------------------------- */
     async function viewMatchDetails(matchId, opponent, venue, score) {
       document.getElementById('modalMatchTitle').innerText = `VS ${opponent}`;
       document.getElementById('modalMatchSubtitle').innerText = `${venue ? '地點: ' + venue : ''} ${score ? ' | 比分: ' + score : ''}`;
       document.getElementById('modalAttList').innerHTML = '載入中...';
-      document.getElementById('modalLineupList').innerHTML = '讀取 9 場陣容中...';
+      document.getElementById('modalLineupList').innerHTML = '讀取各場陣容中...';
       document.getElementById('detailModal').classList.remove('hidden');
 
       const res = await apiRequest('GET', { action: 'getMatchDetails', matchId });
@@ -448,8 +602,10 @@
       const legFormat = res.legFormat || [];
       const atts = res.attendanceList || [];
 
+      document.getElementById('modalLegCountTag').innerText = `(共 ${legFormat.length} 場)`;
+
       if (captainLineup.length === 0) {
-        document.getElementById('modalLineupList').innerHTML = '<p class="text-slate-400 text-center py-2">隊長尚未提交 9 場出賽排陣。</p>';
+        document.getElementById('modalLineupList').innerHTML = '<p class="text-slate-400 text-center py-2">隊長尚未提交對賽出戰排陣。</p>';
       } else {
         document.getElementById('modalLineupList').innerHTML = legFormat.map((leg, idx) => {
           const playerIds = captainLineup[idx] || [];
@@ -495,11 +651,13 @@
       currentLegFormat = res.legFormat || [];
       const saved = res.captainLineup || [];
 
+      document.getElementById('lineupModalHeaderTitle').innerText = `🎯 隊長排陣 (全 ${currentLegFormat.length} 場)`;
+
       if (currentAvailablePlayers.length === 0) {
         container.innerHTML = `
           <div class="text-center py-6">
             <p class="text-rose-400 font-bold mb-1">⚠️ 尚無出席隊友</p>
-            <p class="text-xs text-slate-400">需有隊員在該場次按「出席」或「遲到」方可排陣。</p>
+            <p class="text-xs text-slate-400">需有隊員在該場次按「出席」或「遲到」方可選派排陣。</p>
           </div>
         `;
         return;
@@ -512,7 +670,7 @@
           const selectedPid = assigned[i] || '';
           selects += `
             <select data-leg="${legIdx}" data-slot="${i}" class="lineup-select w-full p-2 rounded bg-slate-700 text-xs border border-slate-600 mb-1.5 focus:border-yellow-400">
-              <option value="">-- 出戰人選 ${i + 1} --</option>
+              <option value="">-- 出戰隊員 ${i + 1} --</option>
               ${currentAvailablePlayers.map(p => `
                 <option value="${p.userId}" ${String(p.userId) === String(selectedPid) ? 'selected' : ''}>
                   ${p.name} (Rating: ${p.rating})
@@ -523,7 +681,7 @@
         }
         return `
           <div class="bg-slate-700/40 p-2.5 rounded-xl border border-slate-600/60">
-            <label class="block font-bold text-yellow-400 mb-1">${leg.name} (${leg.count} 人)</label>
+            <label class="block font-bold text-yellow-400 mb-1">${leg.name} (${leg.count} 人賽)</label>
             ${selects}
           </div>
         `;
