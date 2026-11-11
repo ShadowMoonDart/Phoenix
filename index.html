@@ -22,7 +22,7 @@
     <div id="userInfo" class="text-xs bg-slate-800 px-3 py-1.5 rounded-full border border-slate-700">尚未登入</div>
   </header>
 
-  <!-- 標籤導航欄 (未以隊長登入時，完全隱藏「隊長管理」) -->
+  <!-- 標籤導航欄 (未登入或隊員登入時，完全不顯示隊長管理按鈕) -->
   <nav class="flex justify-around bg-slate-900 border-b border-slate-800 text-xs font-bold sticky top-16 z-30">
     <button onclick="switchTab('matches')" id="btn-matches" class="tab-btn py-3 px-3 border-b-2 border-rose-500 text-rose-400 flex items-center gap-1.5 transition">
       <span>📅</span> 賽程簽到
@@ -88,7 +88,7 @@
       </div>
     </section>
 
-    <!-- 3. 隊長管理分頁 (未以隊長登入時嚴格隱藏) -->
+    <!-- 3. 隊長管理分頁 (未以隊長登入時徹底隱藏) -->
     <section id="tab-admin" class="hidden space-y-4">
       <div class="flex justify-between items-center bg-amber-500/10 p-3 rounded-2xl border border-amber-500/30">
         <h2 class="text-sm font-black text-yellow-400 flex items-center gap-1.5">
@@ -376,12 +376,14 @@
 
     let editingLegs = [];
 
+    // 核心優化：每次請求自動加入 _t=Date.now() 徹底清除瀏覽器快取！
     async function apiRequest(method, payload = {}) {
       try {
         let res;
         if (method === 'GET') {
+          payload._t = Date.now(); // 防快取標記
           const query = new URLSearchParams(payload).toString();
-          res = await fetch(`${API_URL}?${query}`);
+          res = await fetch(`${API_URL}?${query}`, { cache: "no-store" });
         } else {
           res = await fetch(API_URL, {
             method: 'POST',
@@ -519,11 +521,11 @@
       document.getElementById('pastScoreFieldWrapper').classList.toggle('hidden', !checked);
     }
 
-    // 核心修復：安全解析賽事，徹底消除型態報錯卡死
+    // 載入賽程 (防快取 + 穩固渲染)
     async function loadMatches() {
       const container = document.getElementById('matchesContainer');
       const badge = document.getElementById('currentTeamBadge');
-      if (container) container.innerHTML = '<p class="text-xs text-slate-400 text-center py-6">正在載入賽事資料...</p>';
+      if (container) container.innerHTML = '<p class="text-xs text-slate-400 text-center py-6">正在載入最新賽事資料...</p>';
 
       try {
         const json = await apiRequest('GET', { action: 'getMatches' });
@@ -560,7 +562,7 @@
         container.innerHTML = json.matches.map(m => {
           const isFinished = m.score && String(m.score).trim() !== '';
 
-          // 安全字串轉換，防範數字型態報錯崩潰
+          // 安全數值與字串轉換
           const rawRound = m.round ? String(m.round) : '';
           const roundText = rawRound ? (rawRound.includes('輪') ? rawRound : `第 ${rawRound} 輪`) : '特別賽事';
           const matchType = String(m.type || 'match');
@@ -638,7 +640,7 @@
                 </div>
               ` : ''}
 
-              <!-- 嚴格限制：僅隊長可見排陣及比分修改操作 -->
+              <!-- 嚴格限制：僅隊長登入可見排陣及比分修改操作 -->
               ${isAdmin ? `
                 <div class="pt-2 border-t border-slate-800 space-y-2">
                   <button onclick="openLineupModal('${m.id}', '${m.opponent}', ${isFinished ? 'true' : 'false'})" class="w-full bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-slate-950 font-black py-2 rounded-xl text-xs transition cursor-pointer shadow flex items-center justify-center gap-1.5">
@@ -699,7 +701,8 @@
       document.getElementById('newIsFinishedCheck').checked = false;
       togglePastMatchFields(false);
 
-      loadMatches();
+      // 強制等待重新獲取最新賽事後切換
+      await loadMatches();
       switchTab('matches');
     }
 
@@ -708,21 +711,21 @@
       if (score === null) return;
       const res = await apiRequest('POST', { action: 'updateScore', matchId, score: score.trim() });
       alert(res.message || '比分已更新！');
-      loadMatches();
+      await loadMatches();
     }
 
     async function deleteMatch(matchId) {
       if (!confirm('確定要刪除這場賽事嗎？此動作無法復原！')) return;
       const res = await apiRequest('POST', { action: 'deleteMatch', matchId });
       alert(res.message || '已刪除！');
-      loadMatches();
+      await loadMatches();
     }
 
     async function submitAttendance(matchId, status) {
       if (!currentUser) return alert('請先登入！');
       const res = await apiRequest('POST', { action: 'checkIn', matchId, userId: currentUser.id, status });
       alert(res.message || '已送出！');
-      loadMatches();
+      await loadMatches();
     }
 
     /* ----------------------------------------------------
@@ -817,7 +820,7 @@
       btn.innerText = '💾 儲存並套用賽制';
       btn.disabled = false;
       alert(res.message || '賽制已更新！');
-      loadMatches();
+      await loadMatches();
     }
 
     /* ----------------------------------------------------
@@ -1022,7 +1025,7 @@
       const res = await apiRequest('POST', { action: 'saveLineup', matchId: currentLineupMatchId, lineup: lineup });
       alert(res.message || '排陣已更新發布！');
       closeModal('lineupModal');
-      loadMatches();
+      await loadMatches();
     }
 
     async function loadStats() {
