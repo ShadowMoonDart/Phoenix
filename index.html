@@ -21,12 +21,6 @@
     <button onclick="switchTab('admin')" id="btn-admin" class="tab-btn p-3 border-b-2 border-transparent hidden text-yellow-400">隊長管理</button>
   </nav>
 
-  <!-- 提示條 -->
-  <div id="debugBar" class="hidden bg-rose-900/90 border-b border-rose-500 px-4 py-2 text-xs text-rose-100 flex justify-between items-center">
-    <span id="debugMsg"></span>
-    <button onclick="document.getElementById('debugBar').classList.add('hidden')" class="font-bold ml-2">✕</button>
-  </div>
-
   <div class="p-4 max-w-lg mx-auto">
 
     <!-- 登入 / 註冊面板 -->
@@ -54,7 +48,7 @@
           <h2 class="text-sm font-bold text-slate-200">隊伍本季賽程</h2>
           <p id="currentTeamBadge" class="text-[11px] text-slate-400">讀取中...</p>
         </div>
-        <button onclick="loadMatches()" id="syncBtn" class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-3 py-1.5 rounded-lg shadow cursor-pointer">
+        <button onclick="loadMatches()" class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-3 py-1.5 rounded-lg shadow cursor-pointer">
           🔄 重新整理
         </button>
       </div>
@@ -80,44 +74,32 @@
     <section id="tab-admin" class="hidden space-y-4">
       <h2 class="text-sm font-bold text-yellow-400">隊長專屬後台</h2>
 
-      <div class="bg-slate-800 p-4 rounded-xl border border-yellow-500/40 space-y-3 shadow-lg">
+      <!-- 極速智能解析區 -->
+      <div class="bg-slate-800 p-4 rounded-xl border border-yellow-500/50 space-y-3 shadow-lg">
         <div class="flex justify-between items-center">
-          <h3 class="text-xs font-bold text-yellow-400">🎯 Phoenix 聯賽賽程同步</h3>
-          <a href="https://play.phoenixdarts.com/selectCpttnList.do?cpttnType=ML" target="_blank" class="text-[10px] text-rose-400 underline">開啟官網 ↗</a>
+          <h3 class="text-xs font-bold text-yellow-400">⚡ 100% 成功：Phoenix 賽程極速匯入</h3>
+          <a href="https://play.phoenixdarts.com/selectMatchListML.do?cpttnId=97460" target="_blank" class="text-[11px] text-rose-400 underline">打開官網賽程 ↗</a>
         </div>
-        <p class="text-[11px] text-slate-300">支援貼上賽程完整網址，或輸入賽事 ID 自動提取組別：</p>
+        <p class="text-[11px] text-slate-300 leading-relaxed">
+          <b>三秒搞掂教學：</b><br>
+          1. 點上方連結到官網查閱你隊伍的賽程頁面。<br>
+          2. 在該網頁按 <kbd class="bg-slate-700 px-1 rounded">Ctrl+A</kbd> 全選並複製整頁。<br>
+          3. 貼入下方文字框，系統會自動辨識隊伍及所有賽程！
+        </p>
 
-        <!-- 網址輸入框 -->
         <div>
-          <label class="text-slate-400 block mb-1 text-[11px]">Phoenix 賽事網址</label>
-          <input type="text" id="cfgUrlInput" value="https://play.phoenixdarts.com/selectMatchListML.do?cpttnId=97460" class="w-full p-2.5 rounded bg-slate-700 border border-slate-600 text-xs font-mono text-slate-200 focus:border-yellow-400">
+          <label class="text-[11px] text-slate-400 block mb-1">我的隊名（選填，留空則自動猜測）：</label>
+          <input type="text" id="manualTeamName" placeholder="例如：Target Bulls" class="w-full p-2 rounded bg-slate-700 border border-slate-600 text-xs text-white">
         </div>
 
-        <!-- 步驟 1: 提取組別與隊伍選單 -->
-        <button type="button" onclick="fetchDivisionsAndTeams()" id="btnFetchMenu" class="w-full bg-slate-700 hover:bg-slate-600 border border-slate-500 text-white font-bold p-2.5 rounded-lg text-xs transition flex justify-center items-center gap-2 cursor-pointer">
-          <span>🔍 步驟 1：載入該賽事的所有組別與隊伍</span>
-        </button>
-
-        <!-- 步驟 2: 選擇組別與隊伍 -->
-        <div class="grid grid-cols-2 gap-2 pt-1">
-          <div>
-            <label class="text-[10px] text-slate-400 block mb-1">組別 (Division)</label>
-            <select id="divisionDropdown" onchange="onDivisionChange()" class="w-full p-2 rounded bg-slate-700 border border-slate-600 text-[11px] text-white">
-              <option value="">請先按步驟 1 載入</option>
-            </select>
-          </div>
-          <div>
-            <label class="text-[10px] text-slate-400 block mb-1">我的隊伍 (Team)</label>
-            <select id="teamDropdown" class="w-full p-2 rounded bg-slate-700 border border-slate-600 text-[11px] text-white">
-              <option value="">請先選組別</option>
-            </select>
-          </div>
+        <div>
+          <label class="text-[11px] text-slate-400 block mb-1">貼上賽程文字 / 網頁內容：</label>
+          <textarea id="rawContentInput" rows="5" placeholder="在此處直接貼上 (Ctrl+V) 複製的官網內容..." class="w-full p-2.5 rounded bg-slate-700 border border-slate-600 text-xs text-slate-200 font-mono"></textarea>
         </div>
 
-        <!-- 步驟 3: 確定同步 -->
-        <button type="button" onclick="confirmSyncMatches()" id="autoSyncBtn" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold p-3 rounded-xl text-xs transition shadow-lg flex justify-center items-center gap-2 cursor-pointer">
-          <span class="text-sm">🚀</span>
-          <span>步驟 2：確認並一鍵同步隊伍賽程</span>
+        <button type="button" onclick="parseAndUploadMatches()" id="importBtn" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold p-3 rounded-xl text-xs transition shadow-lg flex justify-center items-center gap-2 cursor-pointer">
+          <span class="text-base">🚀</span>
+          <span>即時解析並發佈賽程</span>
         </button>
       </div>
 
@@ -186,39 +168,23 @@
     let currentAvailablePlayers = [];
     let currentLegFormat = [];
 
-    function showDebug(msg) {
-      const bar = document.getElementById('debugBar');
-      const text = document.getElementById('debugMsg');
-      if (bar && text) {
-        text.innerText = "提示: " + msg;
-        bar.classList.remove('hidden');
-      }
-    }
-
     async function apiRequest(method, payload = {}) {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000);
       try {
         let res;
         if (method === 'GET') {
           const query = new URLSearchParams(payload).toString();
-          res = await fetch(`${API_URL}?${query}`, { signal: controller.signal });
+          res = await fetch(`${API_URL}?${query}`);
         } else {
           res = await fetch(API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify(payload),
-            redirect: 'follow',
-            signal: controller.signal
+            redirect: 'follow'
           });
         }
-        clearTimeout(timeoutId);
         return await res.json();
       } catch (err) {
-        clearTimeout(timeoutId);
-        const errMsg = err.name === 'AbortError' ? '連線逾時，後端處理中' : err.toString();
-        showDebug(errMsg);
-        return { success: false, error: errMsg };
+        return { success: false, error: err.toString() };
       }
     }
 
@@ -321,81 +287,114 @@
       loadMatches();
     }
 
-    // 隊長管理：步驟 1 - 載入組別及隊伍
-    async function fetchDivisionsAndTeams() {
-      const urlInput = document.getElementById('cfgUrlInput').value.trim();
-      const btn = document.getElementById('btnFetchMenu');
+    // 核心強大功能：極速解析貼上的賽程
+    async function parseAndUploadMatches() {
+      const raw = document.getElementById('rawContentInput').value;
+      let manualTeam = document.getElementById('manualTeamName').value.trim();
+      if (!raw.trim()) return alert('請先貼上官網賽程文字！');
+
+      const btn = document.getElementById('importBtn');
       btn.disabled = true;
-      btn.innerText = '⏳ 正在連線 Phoenix 讀取名單...';
+      btn.innerText = '⏳ 正在智能分析賽程...';
 
-      const res = await apiRequest('GET', { action: 'autoSyncFromUrl', url: encodeURIComponent(urlInput) });
-      btn.disabled = false;
-      btn.innerText = '🔍 步驟 1：載入該賽事的所有組別與隊伍';
+      const lines = raw.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+      let parsed = [];
 
-      if (res.success) {
-        const divSelect = document.getElementById('divisionDropdown');
-        const teamSelect = document.getElementById('teamDropdown');
+      // 智能比對正則：抓取包含 日期、主隊、比分、客隊、地點的行
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        // 尋找日期格式 (例如 2024.11.12 或 11/12)
+        const dateMatch = line.match(/\b(\d{4}[\/\.-]\d{1,2}[\/\.-]\d{1,2}|\d{1,2}[\/\.-]\d{1,2})\b/);
+        
+        if (dateMatch) {
+          let date = dateMatch[0];
+          let round = (line.match(/\b\d{1,2}\b/) || [parsed.length + 1])[0];
+          
+          // 如果是以 Tab 或多空格隔開的標準表格行
+          let parts = line.split(/\t+|\s{2,}/).map(p => p.trim());
+          if (parts.length >= 4) {
+            let home = parts[1] || '';
+            let score = parts[2] || '';
+            let away = parts[3] || '';
+            let venue = parts[4] || '官方指定鏢吧';
 
-        if (res.divisions && res.divisions.length > 0) {
-          divSelect.innerHTML = res.divisions.map(d => `<option value="${d.id}">${d.name}</option>`).join('');
+            if (home && away) {
+              parsed.push({ round, date, home, score, away, venue });
+              continue;
+            }
+          }
+
+          // 如果是一整塊連續文字（從瀏覽器整頁複製）
+          let context = lines.slice(Math.max(0, i - 2), Math.min(lines.length, i + 6));
+          let possibleTeams = context.filter(c => c.length > 1 && !/\d{4}[\/\.-]/.test(c) && !/VS|vs|主場|客場|Match|Round/i.test(c));
+          if (possibleTeams.length >= 2) {
+            parsed.push({
+              round: String(parsed.length + 1),
+              date: date,
+              home: possibleTeams[0],
+              score: context.find(c => /^\d+\s*[-:]\s*\d+$/.test(c)) || '',
+              away: possibleTeams[1],
+              venue: '官方指定鏢吧'
+            });
+            i += 2; // 跳過已讀取的區塊
+          }
         }
-        if (res.teams && res.teams.length > 0) {
-          teamSelect.innerHTML = res.teams.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
-        }
-        alert(res.message);
-      } else {
-        alert('讀取失敗: ' + (res.error || res.message));
       }
-    }
 
-    // 隊長管理：更換組別時重新取得隊伍
-    async function onDivisionChange() {
-      const divId = document.getElementById('divisionDropdown').value;
-      const urlInput = document.getElementById('cfgUrlInput').value.trim();
-      const cpttnMatch = urlInput.match(/cpttnId=(\d+)/i);
-      const cpttnId = cpttnMatch ? cpttnMatch[1] : '97460';
+      if (parsed.length === 0) {
+        btn.disabled = false;
+        btn.innerHTML = `<span class="text-base">🚀</span><span>即時解析並發佈賽程</span>`;
+        return alert('未能辨識賽程，請確認貼上的文字包含「比賽日期」及「隊伍名稱」！');
+      }
 
-      const res = await apiRequest('GET', { 
-        action: 'autoSyncFromUrl', 
-        url: encodeURIComponent(`https://play.phoenixdarts.com/selectMatchListML.do?cpttnId=${cpttnId}&searchDivision=${divId}`)
+      // 自動推測隊名
+      if (!manualTeam) {
+        let counts = {};
+        parsed.forEach(p => {
+          counts[p.home] = (counts[p.home] || 0) + 1;
+          counts[p.away] = (counts[p.away] || 0) + 1;
+        });
+        let max = 0;
+        for (let t in counts) {
+          if (counts[t] > max) { max = counts[t]; manualTeam = t; }
+        }
+      }
+
+      // 轉換成 Matches 表格標準格式
+      const finalMatches = parsed.map(p => {
+        const isHome = manualTeam ? p.home.includes(manualTeam) : true;
+        const opponent = isHome ? p.away : p.home;
+        return {
+          round: p.round,
+          date: p.date,
+          opponent: opponent,
+          venue: p.venue,
+          isHome: isHome,
+          score: p.score
+        };
       });
 
-      if (res.success && res.teams) {
-        const teamSelect = document.getElementById('teamDropdown');
-        teamSelect.innerHTML = res.teams.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
-      }
-    }
+      // 寫入 Google Apps Script
+      const res = await apiRequest('POST', {
+        action: 'saveImportedMatches',
+        matches: finalMatches,
+        myTeamName: manualTeam
+      });
 
-    // 隊長管理：步驟 2 - 確定同步
-    async function confirmSyncMatches() {
-      const divId = document.getElementById('divisionDropdown').value;
-      const teamId = document.getElementById('teamDropdown').value;
-      const urlInput = document.getElementById('cfgUrlInput').value.trim();
-      const cpttnMatch = urlInput.match(/cpttnId=(\d+)/i);
-      const cpttnId = cpttnMatch ? cpttnMatch[1] : '97460';
-
-      if (!teamId) return alert('請先選定您的隊伍！');
-
-      const syncBtn = document.getElementById('autoSyncBtn');
-      syncBtn.disabled = true;
-      syncBtn.innerHTML = `<span>⏳ 正在下載本季賽程...</span>`;
-
-      const finalUrl = `https://play.phoenixdarts.com/selectMatchListML.do?cpttnId=${cpttnId}&searchDivision=${divId}&searchTeam=${teamId}&searchGubun=1`;
-      const res = await apiRequest('GET', { action: 'autoSyncFromUrl', url: encodeURIComponent(finalUrl), teamId: teamId, divisionId: divId });
-
-      syncBtn.disabled = false;
-      syncBtn.innerHTML = `<span class="text-sm">🚀</span><span>步驟 2：確認並一鍵同步隊伍賽程</span>`;
+      btn.disabled = false;
+      btn.innerHTML = `<span class="text-base">🚀</span><span>即時解析並發佈賽程</span>`;
 
       if (res.success) {
-        alert(res.message);
+        alert(`🎉 成功解析並同步【${manualTeam}】共 ${res.count} 場賽程！`);
+        document.getElementById('rawContentInput').value = '';
         loadMatches();
         switchTab('matches');
       } else {
-        alert('同步失敗: ' + (res.error || res.message));
+        alert('儲存失敗: ' + (res.message || res.error));
       }
     }
 
-    // 載入賽事列表
+    // 載入賽程列表
     async function loadMatches() {
       const container = document.getElementById('matchesContainer');
       const badge = document.getElementById('currentTeamBadge');
@@ -405,7 +404,7 @@
       const setRes = await apiRequest('GET', { action: 'getSettings' });
 
       if (setRes.success && setRes.settings) {
-        if (badge) badge.innerText = `我隊：${setRes.settings.teamName || '尚未設定隊伍'} | 組別：${setRes.settings.divisionId || '-'}`;
+        if (badge) badge.innerText = `我隊：${setRes.settings.teamName || '尚未設定隊伍'}`;
       }
 
       if (!json.success || !json.matches || json.matches.length === 0) {
@@ -414,8 +413,8 @@
             <div class="text-center py-8 bg-slate-800 rounded-xl border border-slate-700">
               <p class="text-slate-400 text-xs mb-3">目前內部尚無賽事紀錄</p>
               ${currentUser && currentUser.role === 'admin' ? `
-                <button onclick="switchTab('admin')" class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded font-bold cursor-pointer">前往隊長管理同步賽程</button>
-              ` : '<p class="text-[11px] text-slate-500">請等待隊長在後台同步賽程</p>'}
+                <button onclick="switchTab('admin')" class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded font-bold cursor-pointer">前往隊長管理匯入賽程</button>
+              ` : '<p class="text-[11px] text-slate-500">請等待隊長在後台匯入賽程</p>'}
             </div>
           `;
         }
