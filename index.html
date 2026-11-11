@@ -3,159 +3,221 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>飛鏢隊伍管理系統</title>
+  <title>🎯 飛鏢隊伍管理系統</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .glow-rose { box-shadow: 0 0 15px rgba(244, 63, 94, 0.25); }
+    .glow-indigo { box-shadow: 0 0 15px rgba(99, 102, 241, 0.25); }
+  </style>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen pb-20">
+<body class="bg-slate-950 text-slate-100 min-h-screen pb-24 selection:bg-rose-500 selection:text-white">
 
   <!-- 頂部導航 -->
-  <header class="bg-slate-800 p-4 sticky top-0 z-40 border-b border-slate-700 flex justify-between items-center shadow-lg">
-    <h1 class="text-xl font-black text-rose-500 tracking-wider">🎯 DART TEAM</h1>
-    <div id="userInfo" class="text-xs">尚未登入</div>
+  <header class="bg-slate-900/90 backdrop-blur-md p-4 sticky top-0 z-40 border-b border-slate-800 flex justify-between items-center shadow-lg">
+    <div class="flex items-center gap-2.5">
+      <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-rose-600 to-amber-500 flex items-center justify-center shadow-md">
+        <span class="text-base">🎯</span>
+      </div>
+      <div>
+        <h1 class="text-base font-black text-white tracking-wider leading-none">DART MASTER</h1>
+        <span class="text-[10px] text-rose-400 font-bold tracking-widest uppercase">Team Management</span>
+      </div>
+    </div>
+    <div id="userInfo" class="text-xs bg-slate-800/80 px-3 py-1.5 rounded-full border border-slate-700">尚未登入</div>
   </header>
 
   <!-- 標籤導航欄 -->
-  <nav class="flex justify-around bg-slate-800 border-b border-slate-700 text-xs font-semibold sticky top-14 z-30">
-    <button onclick="switchTab('matches')" id="btn-matches" class="tab-btn p-3 border-b-2 border-rose-500 text-rose-500 font-bold">賽事簽到</button>
-    <button onclick="switchTab('stats')" id="btn-stats" class="tab-btn p-3 border-b-2 border-transparent">出席率</button>
-    <button onclick="switchTab('admin')" id="btn-admin" class="tab-btn p-3 border-b-2 border-transparent hidden text-yellow-400">隊長管理</button>
+  <nav class="flex justify-around bg-slate-900 border-b border-slate-800 text-xs font-bold sticky top-16 z-30">
+    <button onclick="switchTab('matches')" id="btn-matches" class="tab-btn py-3 px-2 border-b-2 border-rose-500 text-rose-400 flex items-center gap-1.5 transition">
+      <span>📅</span> 賽程簽到
+    </button>
+    <button onclick="switchTab('stats')" id="btn-stats" class="tab-btn py-3 px-2 border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-1.5 transition">
+      <span>📊</span> 出席率榜
+    </button>
+    <button onclick="switchTab('admin')" id="btn-admin" class="tab-btn py-3 px-2 border-b-2 border-transparent hidden text-yellow-400 hover:text-yellow-300 flex items-center gap-1.5 transition">
+      <span>👑</span> 隊長管理
+    </button>
   </nav>
 
-  <div class="p-4 max-w-lg mx-auto">
+  <div class="p-4 max-w-lg mx-auto space-y-4">
 
     <!-- 登入面板 -->
-    <section id="authSection" class="bg-slate-800 p-5 rounded-2xl border border-slate-700 my-4 shadow-lg">
-      <h2 class="text-base font-bold mb-3 text-white" id="authTitle">隊員登入</h2>
+    <section id="authSection" class="bg-slate-900 p-5 rounded-2xl border border-slate-800 my-4 shadow-xl">
+      <h2 class="text-sm font-bold mb-3 text-white flex items-center gap-2" id="authTitle">
+        <span>👤</span> 隊員登入
+      </h2>
       <div class="space-y-3">
-        <input type="email" id="email" placeholder="電郵" class="w-full p-2.5 rounded bg-slate-700 text-xs border border-slate-600 focus:outline-none">
-        <input type="password" id="password" placeholder="密碼" class="w-full p-2.5 rounded bg-slate-700 text-xs border border-slate-600 focus:outline-none">
+        <input type="email" id="email" placeholder="電郵地址" class="w-full p-3 rounded-xl bg-slate-800 text-xs border border-slate-700 text-slate-200 focus:outline-none focus:border-rose-500">
+        <input type="password" id="password" placeholder="密碼" class="w-full p-3 rounded-xl bg-slate-800 text-xs border border-slate-700 text-slate-200 focus:outline-none focus:border-rose-500">
         <div id="registerFields" class="hidden space-y-3">
-          <input type="text" id="regName" placeholder="隊員姓名 / 鏢名" class="w-full p-2.5 rounded bg-slate-700 text-xs border border-slate-600">
-          <input type="number" step="0.01" id="regRating" placeholder="Rating (鏢力)" class="w-full p-2.5 rounded bg-slate-700 text-xs border border-slate-600">
+          <input type="text" id="regName" placeholder="隊員姓名 / 鏢名" class="w-full p-3 rounded-xl bg-slate-800 text-xs border border-slate-700 text-slate-200">
+          <input type="number" step="0.01" id="regRating" placeholder="Rating 鏢力 (例如: 10.5)" class="w-full p-3 rounded-xl bg-slate-800 text-xs border border-slate-700 text-slate-200">
         </div>
-        <button onclick="handleAuthAction()" id="authSubmitBtn" class="w-full bg-rose-600 hover:bg-rose-500 font-bold p-2.5 rounded text-xs transition cursor-pointer">登入</button>
+        <button onclick="handleAuthAction()" id="authSubmitBtn" class="w-full bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 font-bold p-3 rounded-xl text-xs transition cursor-pointer shadow-lg">登入</button>
         <p class="text-center text-xs text-slate-400">
           <span id="authToggleText">仲未有帳號？</span>
-          <button type="button" onclick="toggleAuthMode()" id="authToggleLink" class="text-rose-400 underline ml-1 cursor-pointer">按此註冊</button>
+          <button type="button" onclick="toggleAuthMode()" id="authToggleLink" class="text-rose-400 underline font-semibold ml-1 cursor-pointer">按此註冊</button>
         </p>
       </div>
     </section>
 
     <!-- 1. 賽事簽到分頁 -->
     <section id="tab-matches" class="space-y-4">
-      <div class="flex justify-between items-center">
+      <div class="flex justify-between items-center bg-slate-900/60 p-3 rounded-xl border border-slate-800">
         <div>
-          <h2 class="text-sm font-bold text-slate-200">隊伍本季賽程</h2>
-          <p id="currentTeamBadge" class="text-[11px] text-slate-400">讀取中...</p>
+          <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400">當前球季賽程</h2>
+          <p id="currentTeamBadge" class="text-sm font-black text-white">讀取中...</p>
         </div>
-        <button onclick="loadMatches()" class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-3 py-1.5 rounded-lg shadow cursor-pointer">
-          🔄 重新整理
+        <button onclick="loadMatches()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-3 py-1.5 rounded-lg border border-slate-700 shadow transition cursor-pointer flex items-center gap-1.5">
+          <span>🔄</span> 重新整理
         </button>
       </div>
       <div id="matchesContainer" class="space-y-3">
-        <p class="text-xs text-slate-400 text-center py-4">正在載入賽事資料...</p>
+        <p class="text-xs text-slate-400 text-center py-6">正在載入賽事資料...</p>
       </div>
     </section>
 
     <!-- 2. 出席率統計分頁 -->
     <section id="tab-stats" class="hidden space-y-4">
-      <h2 class="text-sm font-bold text-slate-300">隊員出席排行榜</h2>
-      <div class="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden shadow">
+      <h2 class="text-sm font-bold text-slate-300 flex items-center gap-2">
+        <span>🏆</span> 隊員出席活躍度排行榜
+      </h2>
+      <div class="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow-xl">
         <table class="w-full text-left text-xs">
-          <thead class="bg-slate-700 text-slate-300">
-            <tr><th class="p-3">隊員</th><th class="p-3">Rating</th><th class="p-3">出席場數</th></tr>
+          <thead class="bg-slate-800/80 text-slate-300 uppercase tracking-wider text-[11px]">
+            <tr><th class="p-3.5">隊員</th><th class="p-3.5">Rating 鏢力</th><th class="p-3.5">出席場數</th></tr>
           </thead>
-          <tbody id="statsTableBody" class="divide-y divide-slate-700"></tbody>
+          <tbody id="statsTableBody" class="divide-y divide-slate-800"></tbody>
         </table>
       </div>
     </section>
 
     <!-- 3. 隊長管理分頁 -->
     <section id="tab-admin" class="hidden space-y-4">
-      <h2 class="text-sm font-bold text-yellow-400">隊長專屬後台</h2>
+      <h2 class="text-sm font-black text-yellow-400 flex items-center gap-1.5">
+        <span>👑</span> 隊長專屬控制後台
+      </h2>
+
+      <!-- 手動新增賽事面板 -->
+      <div class="bg-slate-900 p-4 rounded-2xl border border-yellow-500/40 space-y-3.5 shadow-xl glow-rose">
+        <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+          <h3 class="text-xs font-black text-yellow-400 flex items-center gap-1.5">
+            <span>➕</span> 新增賽程 / 補入已完賽紀錄
+          </h3>
+          <span class="text-[10px] text-slate-400">正式 / 友賽 / 練習</span>
+        </div>
+
+        <!-- 賽事性質切換 -->
+        <div>
+          <label class="text-[11px] font-bold text-slate-300 block mb-1">賽事性質：</label>
+          <div class="grid grid-cols-3 gap-2">
+            <label class="cursor-pointer">
+              <input type="radio" name="newType" value="match" checked class="peer sr-only">
+              <div class="text-center p-2 rounded-xl border border-slate-700 bg-slate-800 peer-checked:bg-rose-600 peer-checked:border-rose-500 peer-checked:text-white text-xs font-bold text-slate-300 transition">
+                🏆 正式聯賽
+              </div>
+            </label>
+            <label class="cursor-pointer">
+              <input type="radio" name="newType" value="friendly" class="peer sr-only">
+              <div class="text-center p-2 rounded-xl border border-slate-700 bg-slate-800 peer-checked:bg-cyan-600 peer-checked:border-cyan-500 peer-checked:text-white text-xs font-bold text-slate-300 transition">
+                🤝 友誼賽
+              </div>
+            </label>
+            <label class="cursor-pointer">
+              <input type="radio" name="newType" value="practice" class="peer sr-only">
+              <div class="text-center p-2 rounded-xl border border-slate-700 bg-slate-800 peer-checked:bg-emerald-600 peer-checked:border-emerald-500 peer-checked:text-white text-xs font-bold text-slate-300 transition">
+                🎯 普通練習
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 text-xs">
+          <div>
+            <label class="text-[11px] text-slate-400 block mb-1">輪次 / 名稱</label>
+            <input type="text" id="newRound" placeholder="例如: 1 或 季前熱身" class="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-200">
+          </div>
+          <div>
+            <label class="text-[11px] text-slate-400 block mb-1">主場 / 客場</label>
+            <select id="newIsHome" class="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-200">
+              <option value="true">主場 (Home)</option>
+              <option value="false">客場 (Away)</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="text-[11px] font-bold text-slate-300 block mb-1">比賽日期與時間 (清晰大字顯示)</label>
+          <input type="text" id="newDate" placeholder="例如: 2026-03-25 (三) 20:30" class="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-xs font-bold text-yellow-300 focus:outline-none focus:border-yellow-400">
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 text-xs">
+          <div>
+            <label class="text-[11px] text-slate-400 block mb-1">對手名稱 (練習可填隊名)</label>
+            <input type="text" id="newOpponent" placeholder="例如: Bullseye" class="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-200">
+          </div>
+          <div>
+            <label class="text-[11px] text-slate-400 block mb-1">比賽地點 (鏢吧名稱)</label>
+            <input type="text" id="newVenue" placeholder="例如: i Darts Club" class="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-200">
+          </div>
+        </div>
+
+        <!-- 補入已進行賽事選項 -->
+        <div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700 space-y-2">
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" id="newIsFinishedCheck" onchange="togglePastMatchFields(this.checked)" class="w-4 h-4 rounded text-rose-600 focus:ring-0">
+            <span class="text-xs font-bold text-white">此賽事「已進行完畢」(直接入比分，無需理會簽到)</span>
+          </label>
+          
+          <div id="pastScoreFieldWrapper" class="hidden pt-1">
+            <label class="text-[11px] text-amber-400 block mb-1 font-bold">最終賽果比分：</label>
+            <input type="text" id="newScore" placeholder="例如: 5-4 或 勝出" class="w-full p-2 rounded-lg bg-slate-900 border border-amber-500/50 text-xs text-yellow-300 font-black">
+            <p class="text-[10px] text-slate-400 mt-1">※ 新增後，隊長可直接在排陣選取「全隊任何隊友」作成績記錄。</p>
+          </div>
+        </div>
+
+        <button type="button" onclick="submitNewMatch()" class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold p-3 rounded-xl text-xs transition cursor-pointer shadow-lg flex items-center justify-center gap-1.5">
+          <span>🚀</span> 確認建立賽程
+        </button>
+      </div>
 
       <!-- 賽季賽制設定 (全下拉選單) -->
-      <div class="bg-slate-800 p-4 rounded-xl border border-indigo-500/50 space-y-3 shadow-lg">
-        <div class="flex justify-between items-center">
-          <h3 class="text-xs font-bold text-indigo-400 flex items-center gap-1">
-            <span>⚙️</span> 賽季對賽賽制設定
+      <div class="bg-slate-900 p-4 rounded-2xl border border-indigo-500/40 space-y-3 shadow-xl glow-indigo">
+        <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+          <h3 class="text-xs font-black text-indigo-400 flex items-center gap-1.5">
+            <span>⚙️</span> 賽季每場出賽規格 (Leg Format)
           </h3>
-          <span id="currentLegsCountBadge" class="text-[10px] bg-indigo-900 text-indigo-300 px-2 py-0.5 rounded font-bold">共 9 場</span>
+          <span id="currentLegsCountBadge" class="text-[10px] bg-indigo-950 text-indigo-300 border border-indigo-800 px-2.5 py-0.5 rounded-full font-bold">共 9 場</span>
         </div>
         
         <div>
-          <label class="text-[11px] text-slate-400 block mb-1">一鍵套用官方賽制預設：</label>
-          <select id="presetSelect" onchange="selectPreset(this.value)" class="w-full p-2.5 rounded bg-slate-700 border border-slate-600 text-xs text-slate-200">
-            <option value="phoenix9">🎯 Phoenix 聯賽標準 9 場制 (3單 4雙 1三人 1隊制)</option>
+          <label class="text-[11px] text-slate-400 block mb-1">套用賽制規格範本：</label>
+          <select id="presetSelect" onchange="selectPreset(this.value)" class="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-xs text-slate-200">
+            <option value="phoenix9">🎯 Phoenix 聯賽 9 場制 (男單/女單/雙打/三人/Gallon)</option>
             <option value="standard7">⚡ 傳統 7 場制 (3單 3雙 1隊制)</option>
             <option value="cup5">🏆 精簡 5 場制 (2單 2雙 1隊制)</option>
             <option value="custom">✏️ 自由自訂模式</option>
           </select>
         </div>
 
-        <label class="text-[11px] text-slate-400 block mt-2">各場次比賽內容 (點擊下拉選單切換)：</label>
-        
-        <!-- 各 Leg 下拉選單列表 -->
-        <div class="space-y-2 max-h-64 overflow-y-auto p-2 bg-slate-900/50 rounded-lg border border-slate-700/60" id="legsConfigList">
-          <!-- 動態生成 Leg 下拉選單 -->
-        </div>
+        <div class="space-y-2 max-h-56 overflow-y-auto p-2 bg-slate-950/60 rounded-xl border border-slate-800" id="legsConfigList"></div>
 
         <div class="flex gap-2 pt-1">
-          <button type="button" onclick="addNewLegRow()" class="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-200 py-2 rounded text-xs font-semibold cursor-pointer">
+          <button type="button" onclick="addNewLegRow()" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 py-2 rounded-xl text-xs font-bold border border-slate-700 transition cursor-pointer">
             ➕ 加一場 (Add Leg)
           </button>
-          <button type="button" onclick="saveSeasonFormat()" id="saveFormatBtn" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 rounded text-xs cursor-pointer shadow">
+          <button type="button" onclick="saveSeasonFormat()" id="saveFormatBtn" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 rounded-xl text-xs transition cursor-pointer shadow-lg">
             💾 儲存並套用賽制
           </button>
         </div>
       </div>
 
-      <!-- 手動新增賽事面板 -->
-      <div class="bg-slate-800 p-4 rounded-xl border border-yellow-500/50 space-y-3 shadow-lg">
-        <h3 class="text-xs font-bold text-yellow-400 flex items-center gap-1">
-          <span>➕</span> 新增單場賽程
-        </h3>
-        <div class="grid grid-cols-2 gap-2 text-xs">
-          <div>
-            <label class="text-[11px] text-slate-400 block mb-0.5">輪次 (Round)</label>
-            <input type="text" id="newRound" placeholder="例如: 1" class="w-full p-2 rounded bg-slate-700 border border-slate-600 text-slate-200">
-          </div>
-          <div>
-            <label class="text-[11px] text-slate-400 block mb-0.5">比賽日期 / 時間</label>
-            <input type="text" id="newDate" placeholder="例如: 2026-03-25" class="w-full p-2 rounded bg-slate-700 border border-slate-600 text-slate-200">
-          </div>
-          <div>
-            <label class="text-[11px] text-slate-400 block mb-0.5">對手隊伍名稱</label>
-            <input type="text" id="newOpponent" placeholder="例如: Bullseye Team" class="w-full p-2 rounded bg-slate-700 border border-slate-600 text-slate-200">
-          </div>
-          <div>
-            <label class="text-[11px] text-slate-400 block mb-0.5">主客場</label>
-            <select id="newIsHome" class="w-full p-2 rounded bg-slate-700 border border-slate-600 text-slate-200">
-              <option value="true">主場 (Home)</option>
-              <option value="false">客場 (Away)</option>
-            </select>
-          </div>
-        </div>
-        <div>
-          <label class="text-[11px] text-slate-400 block mb-0.5">比賽地點 (鏢吧名稱 / 地址)</label>
-          <input type="text" id="newVenue" placeholder="例如: i Darts Club" class="w-full p-2 rounded bg-slate-700 border border-slate-600 text-xs text-slate-200">
-        </div>
-        <button type="button" onclick="submitNewMatch()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold p-2.5 rounded text-xs transition cursor-pointer">
-          確認新增賽事
-        </button>
-      </div>
-
-      <!-- 快速貼上教學說明 -->
-      <div class="bg-slate-800 p-3.5 rounded-xl border border-slate-700 text-xs text-slate-300 space-y-1.5 shadow">
-        <p class="font-bold text-yellow-400">💡 批量加入全季賽事極速方法：</p>
-        <p class="text-[11px] text-slate-400 leading-relaxed">
-          若要一次過入全季十幾場：直接用電腦在官網賽程表格按複製 (Ctrl+C)，然後打開你的 <b>Google Sheet (Matches 分頁)</b> 第一個空白列按貼上 (Ctrl+V)，重新整理即刻同步全季！
-        </p>
-      </div>
-
       <!-- 待審批會員 -->
-      <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 shadow">
-        <h3 class="text-xs font-bold mb-2 text-slate-200">待審批會員啟用</h3>
+      <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800 shadow-lg">
+        <h3 class="text-xs font-bold mb-2.5 text-slate-300 flex items-center gap-1.5">
+          <span>👥</span> 待審核啟用會員名單
+        </h3>
         <div id="pendingUsersList" class="space-y-2 text-xs"></div>
       </div>
     </section>
@@ -163,44 +225,68 @@
   </div>
 
   <!-- Modal 1：查看對賽排陣 & 簽到名單 -->
-  <div id="detailModal" class="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 hidden">
-    <div class="bg-slate-800 rounded-2xl max-w-lg w-full max-h-[85vh] flex flex-col border border-slate-700 shadow-2xl">
-      <div class="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-900/40">
+  <div id="detailModal" class="fixed inset-0 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+    <div class="bg-slate-900 rounded-3xl max-w-lg w-full max-h-[85vh] flex flex-col border border-slate-800 shadow-2xl">
+      <div class="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-950/50">
         <div>
-          <h3 id="modalMatchTitle" class="text-sm font-bold text-white"></h3>
-          <p id="modalMatchSubtitle" class="text-[11px] text-slate-400"></p>
+          <h3 id="modalMatchTitle" class="text-base font-black text-white"></h3>
+          <p id="modalMatchSubtitle" class="text-xs text-slate-400 mt-0.5"></p>
         </div>
-        <button onclick="closeModal('detailModal')" class="text-slate-400 hover:text-white text-lg font-bold cursor-pointer">&times;</button>
+        <button onclick="closeModal('detailModal')" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center font-bold text-base cursor-pointer">&times;</button>
       </div>
       <div class="p-4 overflow-y-auto space-y-4 text-xs">
         <div>
-          <h4 class="font-bold text-yellow-400 text-xs mb-2 flex items-center justify-between">
-            <span>🎯 各場出賽排陣</span>
+          <h4 class="font-bold text-yellow-400 text-xs mb-2.5 flex items-center justify-between">
+            <span>🎯 各場出賽排陣名單</span>
             <span id="modalLegCountTag" class="text-[10px] text-slate-400 font-normal"></span>
           </h4>
-          <div id="modalLineupList" class="space-y-1.5 bg-slate-900/60 p-2.5 rounded-xl border border-slate-700/60">載入中...</div>
+          <div id="modalLineupList" class="space-y-2 bg-slate-950/60 p-3 rounded-2xl border border-slate-800">載入中...</div>
         </div>
         <div>
-          <h4 class="font-bold text-slate-300 mb-2">👥 內部簽到出席名單</h4>
-          <div id="modalAttList" class="space-y-1.5 max-h-40 overflow-y-auto">載入中...</div>
+          <h4 class="font-bold text-slate-300 mb-2.5 flex items-center gap-1.5">
+            <span>👥</span> 隊友簽到出席情況
+          </h4>
+          <div id="modalAttList" class="space-y-2 max-h-40 overflow-y-auto">載入中...</div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Modal 2：隊長排陣 Modal -->
-  <div id="lineupModal" class="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 hidden">
-    <div class="bg-slate-800 rounded-2xl max-w-lg w-full max-h-[90vh] flex flex-col border border-yellow-500/50 shadow-2xl">
-      <div class="p-4 border-b border-slate-700 flex justify-between items-center bg-yellow-500/10">
-        <div>
-          <h3 class="text-sm font-bold text-yellow-400" id="lineupModalHeaderTitle">🎯 隊長排陣系統</h3>
-          <p class="text-[11px] text-slate-300">只允許安排【已簽到出席 / 遲到】之隊友出戰</p>
+  <!-- Modal 2：隊長排陣 Modal (包含 AI 智能推薦) -->
+  <div id="lineupModal" class="fixed inset-0 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+    <div class="bg-slate-900 rounded-3xl max-w-lg w-full max-h-[92vh] flex flex-col border border-yellow-500/50 shadow-2xl">
+      <div class="p-4 border-b border-slate-800 bg-gradient-to-r from-yellow-500/10 to-transparent">
+        <div class="flex justify-between items-center">
+          <div>
+            <h3 class="text-sm font-black text-yellow-400 flex items-center gap-1.5" id="lineupModalHeaderTitle">
+              <span>🎯</span> 隊長排陣系統
+            </h3>
+            <p class="text-[11px] text-slate-400 mt-0.5" id="lineupModalSub">已出席/全隊隊員出戰指派</p>
+          </div>
+          <button onclick="closeModal('lineupModal')" class="w-8 h-8 rounded-full bg-slate-800 text-slate-300 hover:bg-slate-700 flex items-center justify-center font-bold text-base cursor-pointer">&times;</button>
         </div>
-        <button onclick="closeModal('lineupModal')" class="text-slate-400 hover:text-white text-lg font-bold cursor-pointer">&times;</button>
+
+        <!-- AI 智能排陣按鈕 -->
+        <div class="mt-3 bg-gradient-to-r from-indigo-900/40 via-purple-900/30 to-slate-900 p-2.5 rounded-2xl border border-indigo-500/40 flex justify-between items-center">
+          <div>
+            <p class="text-xs font-black text-indigo-300 flex items-center gap-1">
+              <span>🧠</span> AI 陣容智能推算
+            </p>
+            <p class="text-[10px] text-slate-400">依據鏢力 (Rating) 與戰力平衡排陣</p>
+          </div>
+          <button type="button" onclick="triggerAiLineupSuggestion()" class="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold px-3 py-1.5 rounded-xl text-xs transition shadow cursor-pointer">
+            ✨ 一鍵 AI 排陣
+          </button>
+        </div>
+        <div id="aiReasoningBadge" class="hidden mt-1.5 text-[11px] text-emerald-400 bg-emerald-950/60 p-1.5 rounded-lg border border-emerald-800"></div>
       </div>
-      <div class="p-4 overflow-y-auto space-y-3.5 text-xs" id="lineupLegsContainer"></div>
-      <div class="p-4 border-t border-slate-700 bg-slate-800">
-        <button onclick="submitLineup()" class="w-full bg-yellow-500 hover:bg-yellow-400 text-slate-900 font-bold p-2.5 rounded text-xs transition cursor-pointer">儲存並公開對賽陣容</button>
+
+      <div class="p-4 overflow-y-auto space-y-3 text-xs" id="lineupLegsContainer"></div>
+      
+      <div class="p-4 border-t border-slate-800 bg-slate-950/60">
+        <button onclick="submitLineup()" class="w-full bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-slate-950 font-black p-3 rounded-xl text-xs transition cursor-pointer shadow-lg">
+          💾 儲存並發布對賽陣容
+        </button>
       </div>
     </div>
   </div>
@@ -219,6 +305,7 @@
     let isRegisterMode = false;
     let currentLineupMatchId = null;
     let currentAvailablePlayers = [];
+    let currentAllTeamUsers = [];
     let currentLegFormat = [];
 
     // 下拉選單所有可選的賽事規格
@@ -227,7 +314,10 @@
         group: "單打 (1人)",
         items: [
           { label: "男單", count: 1 },
-        { label: "女單", count: 1 },
+          { label: "女單", count: 1 },
+          { label: "單打 501", count: 1 },
+          { label: "單打 701", count: 1 },
+          { label: "單打 Cricket", count: 1 }
         ]
       },
       {
@@ -235,53 +325,55 @@
         items: [
           { label: "雙打(男子)", count: 2 },
           { label: "雙打(混合)", count: 2 },
+          { label: "雙打 501", count: 2 },
+          { label: "雙打 701", count: 2 },
+          { label: "雙打 Cricket", count: 2 }
         ]
       },
       {
         group: "三人賽 (3人)",
         items: [
+          { label: "三人賽 701", count: 3 },
           { label: "三人賽 901", count: 3 },
-      
+          { label: "三人賽 Cricket", count: 3 }
         ]
       },
       {
         group: "隊制四人賽 (4人)",
         items: [
-          
           { label: "隊制四人賽 Gallon 1101", count: 4 },
-      
+          { label: "隊制四人賽 Gallon 901", count: 4 }
         ]
       }
     ];
 
-    // 官方常見預設配置
     const PRESETS = {
       phoenix9: [
-        { name: "單打 501", count: 1 },
-        { name: "單打 Cricket", count: 1 },
-        { name: "雙打 501", count: 2 },
-        { name: "雙打 Cricket", count: 2 },
+        { name: "男單", count: 1 },
+        { name: "女單", count: 1 },
+        { name: "雙打(男子)", count: 2 },
+        { name: "雙打(混合)", count: 2 },
         { name: "單打 701", count: 1 },
         { name: "雙打 701", count: 2 },
         { name: "雙打 Cricket", count: 2 },
-        { name: "三人賽 701", count: 3 },
-        { name: "隊制四人賽 Gallon 901", count: 4 }
+        { name: "三人賽 901", count: 3 },
+        { name: "隊制四人賽 Gallon 1101", count: 4 }
       ],
       standard7: [
-        { name: "單打 501", count: 1 },
-        { name: "單打 Cricket", count: 1 },
-        { name: "雙打 501", count: 2 },
-        { name: "雙打 Cricket", count: 2 },
+        { name: "男單", count: 1 },
+        { name: "女單", count: 1 },
+        { name: "雙打(男子)", count: 2 },
+        { name: "雙打(混合)", count: 2 },
         { name: "單打 701", count: 1 },
         { name: "雙打 701", count: 2 },
-        { name: "隊制四人賽 Gallon 901", count: 4 }
+        { name: "隊制四人賽 Gallon 1101", count: 4 }
       ],
       cup5: [
         { name: "單打 501", count: 1 },
         { name: "單打 Cricket", count: 1 },
-        { name: "雙打 501", count: 2 },
+        { name: "雙打(混合)", count: 2 },
         { name: "雙打 Cricket", count: 2 },
-        { name: "隊制四人賽 Gallon 901", count: 4 }
+        { name: "隊制四人賽 Gallon 1101", count: 4 }
       ]
     };
 
@@ -323,7 +415,7 @@
         if (userInfo) {
           userInfo.innerHTML = `
             <span>${currentUser.name} (${currentUser.role === 'admin' ? '<b class="text-yellow-400">隊長</b>' : '隊員'})</span>
-            <button onclick="logout()" class="ml-2 text-rose-400 underline cursor-pointer">登出</button>
+            <button onclick="logout()" class="ml-2 text-rose-400 underline font-bold cursor-pointer">登出</button>
           `;
         }
         if (currentUser.role === 'admin' && adminBtn) {
@@ -343,8 +435,8 @@
         const btn = document.getElementById(`btn-${t}`);
         if (el) el.classList.add('hidden');
         if (btn) {
-          btn.classList.remove('border-rose-500', 'text-rose-500', 'font-bold');
-          btn.classList.add('border-transparent');
+          btn.classList.remove('border-rose-500', 'text-rose-400');
+          btn.classList.add('border-transparent', 'text-slate-400');
         }
       });
 
@@ -352,8 +444,8 @@
       const targetBtn = document.getElementById(`btn-${tabId}`);
       if (targetEl) targetEl.classList.remove('hidden');
       if (targetBtn) {
-        targetBtn.classList.add('border-rose-500', 'text-rose-500', 'font-bold');
-        targetBtn.classList.remove('border-transparent');
+        targetBtn.classList.add('border-rose-500', 'text-rose-400');
+        targetBtn.classList.remove('border-transparent', 'text-slate-400');
       }
       if (tabId === 'stats') loadStats();
       if (tabId === 'admin') loadAdminData();
@@ -408,27 +500,32 @@
       loadMatches();
     }
 
-    // 載入賽程列表
+    function togglePastMatchFields(checked) {
+      document.getElementById('pastScoreFieldWrapper').classList.toggle('hidden', !checked);
+    }
+
+    // 載入賽程列表（大日期時間、三種賽事性質識別）
     async function loadMatches() {
       const container = document.getElementById('matchesContainer');
       const badge = document.getElementById('currentTeamBadge');
-      if (container) container.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">讀取中...</p>';
+      if (container) container.innerHTML = '<p class="text-xs text-slate-400 text-center py-6">讀取賽程中...</p>';
 
       const json = await apiRequest('GET', { action: 'getMatches' });
       const setRes = await apiRequest('GET', { action: 'getSettings' });
 
       if (setRes.success && setRes.settings) {
-        if (badge) badge.innerText = `我隊：${setRes.settings.teamName || '我的飛鏢隊'}`;
+        if (badge) badge.innerText = `${setRes.settings.teamName || '我的飛鏢隊'}`;
       }
 
       if (!json.success || !json.matches || json.matches.length === 0) {
         if (container) {
           container.innerHTML = `
-            <div class="text-center py-8 bg-slate-800 rounded-xl border border-slate-700">
-              <p class="text-slate-400 text-xs mb-3">目前尚無賽事紀錄</p>
+            <div class="text-center py-12 bg-slate-900 rounded-3xl border border-slate-800">
+              <span class="text-3xl block mb-2">🎯</span>
+              <p class="text-slate-400 text-xs mb-3 font-medium">目前尚無任何賽程記錄</p>
               ${currentUser && currentUser.role === 'admin' ? `
-                <button onclick="switchTab('admin')" class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded font-bold cursor-pointer">前往後台新增賽事</button>
-              ` : '<p class="text-[11px] text-slate-500">請等待隊長新增賽程</p>'}
+                <button onclick="switchTab('admin')" class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl font-bold cursor-pointer">前往隊長後台新增賽程</button>
+              ` : '<p class="text-[11px] text-slate-500">等待隊長發布賽程</p>'}
             </div>
           `;
         }
@@ -439,46 +536,97 @@
 
       container.innerHTML = json.matches.map(m => {
         const isFinished = m.score && String(m.score).trim() !== '';
+
+        // 賽事類型標籤樣式
+        let typeBadge = '<span class="text-[10px] bg-rose-950 text-rose-300 border border-rose-800 px-2.5 py-0.5 rounded-full font-bold">🏆 正式聯賽</span>';
+        if (m.type === 'friendly') {
+          typeBadge = '<span class="text-[10px] bg-cyan-950 text-cyan-300 border border-cyan-800 px-2.5 py-0.5 rounded-full font-bold">🤝 友誼對抗賽</span>';
+        } else if (m.type === 'practice') {
+          typeBadge = '<span class="text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-800 px-2.5 py-0.5 rounded-full font-bold">🎯 普通例行練習</span>';
+        }
+
         return `
-          <div class="bg-slate-800 p-4 rounded-xl border ${isFinished ? 'border-slate-700/60' : 'border-slate-700'} space-y-2.5 shadow">
+          <div class="bg-slate-900 p-4 rounded-3xl border ${isFinished ? 'border-slate-800' : 'border-slate-700/80'} space-y-3 shadow-xl relative overflow-hidden">
+            
+            <!-- 賽事性質與輪次頭部 -->
             <div class="flex justify-between items-center">
               <div class="flex items-center gap-1.5">
-                <span class="text-[10px] bg-slate-700 text-slate-300 px-2 py-0.5 rounded font-mono font-bold">第 ${m.round || '-'} 輪</span>
-                <span class="text-[10px] ${m.isHome ? 'bg-rose-600' : 'bg-blue-600'} px-2 py-0.5 rounded font-bold">${m.isHome ? '主場' : '客場'}</span>
-                ${isFinished ? `<span class="text-[10px] bg-emerald-600 px-2 py-0.5 rounded font-bold">完賽 ${m.score}</span>` : '<span class="text-[10px] bg-amber-600 px-2 py-0.5 rounded font-bold">未完賽</span>'}
+                ${typeBadge}
+                <span class="text-[10px] bg-slate-800 text-slate-300 px-2.5 py-0.5 rounded-full font-mono font-bold">
+                  ${m.round ? (m.round.includes('輪') ? m.round : `第 ${m.round} 輪`) : '特別賽事'}
+                </span>
+                <span class="text-[10px] ${m.isHome ? 'bg-indigo-600 text-white' : 'bg-slate-700 text-slate-300'} px-2 py-0.5 rounded-full font-bold">
+                  ${m.isHome ? '主場' : '客場'}
+                </span>
               </div>
-              <span class="text-xs text-slate-400">${m.date || ''}</span>
+              ${isFinished ? `
+                <span class="text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 px-2.5 py-0.5 rounded-full font-black">
+                  完賽 (${m.score})
+                </span>
+              ` : `
+                <span class="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded-full font-bold">
+                  進行中 / 未完賽
+                </span>
+              `}
             </div>
 
-            <div class="flex justify-between items-center">
-              <h3 class="font-bold text-base text-white">VS ${m.opponent}</h3>
-              ${isFinished ? `<span class="text-yellow-400 font-black text-sm bg-slate-900 px-2.5 py-0.5 rounded border border-yellow-500/30">${m.score}</span>` : ''}
+            <!-- 特大日期與時間顯示區塊 -->
+            <div class="bg-slate-950/80 p-3 rounded-2xl border border-slate-800/80 flex items-center gap-3">
+              <div class="text-2xl p-2 bg-slate-900 rounded-xl border border-slate-800">📅</div>
+              <div class="flex-1">
+                <div class="text-base sm:text-lg font-black text-yellow-300 tracking-wide font-mono">
+                  ${m.date || '日期未定'}
+                </div>
+                <div class="text-xs text-slate-300 font-medium flex items-center gap-1 mt-0.5">
+                  <span class="text-slate-500">📍</span> ${m.venue || '官方指定鏢吧'}
+                </div>
+              </div>
             </div>
-            <p class="text-xs text-slate-300">📍 地點: ${m.venue || '官方指定鏢吧'}</p>
 
-            <div class="flex items-center gap-3 bg-slate-900/60 p-2 rounded-lg text-[11px]">
-              <span class="text-emerald-400 font-semibold">出席: ${m.counts ? m.counts.attending : 0}</span>
-              <span class="text-amber-400 font-semibold">遲到: ${m.counts ? m.counts.late : 0}</span>
-              <span class="text-rose-400 font-semibold">缺席: ${m.counts ? m.counts.absent : 0}</span>
-              <button onclick="viewMatchDetails('${m.id}', '${m.opponent}', '${m.venue}', '${m.score || ''}')" class="ml-auto text-rose-400 hover:text-rose-300 underline font-medium cursor-pointer">
-                查看名單/排陣 ↗
+            <!-- 對賽隊伍與比分 -->
+            <div class="flex justify-between items-center px-1">
+              <div>
+                <span class="text-[11px] text-slate-400 font-medium block">對賽隊伍</span>
+                <h3 class="font-black text-lg text-white">VS ${m.opponent}</h3>
+              </div>
+              ${isFinished ? `
+                <div class="text-right">
+                  <span class="text-[10px] text-slate-400 block font-medium">總比分</span>
+                  <span class="text-xl font-black text-yellow-400 font-mono tracking-wider">${m.score}</span>
+                </div>
+              ` : ''}
+            </div>
+
+            <!-- 簽到出席人數狀態 -->
+            <div class="flex items-center gap-3 bg-slate-950/60 p-2.5 rounded-2xl text-[11px] border border-slate-800/60">
+              <span class="text-emerald-400 font-bold">出席: ${m.counts ? m.counts.attending : 0}</span>
+              <span class="text-amber-400 font-bold">遲到: ${m.counts ? m.counts.late : 0}</span>
+              <span class="text-rose-400 font-bold">缺席: ${m.counts ? m.counts.absent : 0}</span>
+              <button onclick="viewMatchDetails('${m.id}', '${m.opponent}', '${m.venue}', '${m.score || ''}')" class="ml-auto text-indigo-400 hover:text-indigo-300 underline font-bold cursor-pointer">
+                名單/排陣 ↗
               </button>
             </div>
 
-            <div class="grid grid-cols-3 gap-2 pt-1 border-t border-slate-700/60">
-              <button onclick="submitAttendance('${m.id}', 'attending')" class="bg-emerald-600 hover:bg-emerald-500 py-1.5 rounded text-xs font-semibold cursor-pointer">出席 👍</button>
-              <button onclick="submitAttendance('${m.id}', 'late')" class="bg-amber-600 hover:bg-amber-500 py-1.5 rounded text-xs font-semibold cursor-pointer">遲到 ⏰</button>
-              <button onclick="submitAttendance('${m.id}', 'absent')" class="bg-rose-600 hover:bg-rose-500 py-1.5 rounded text-xs font-semibold cursor-pointer">缺席 ❌</button>
-            </div>
+            <!-- 隊員簽到按鈕 (未完賽時顯示) -->
+            ${!isFinished ? `
+              <div class="grid grid-cols-3 gap-2 pt-1 border-t border-slate-800/80">
+                <button onclick="submitAttendance('${m.id}', 'attending')" class="bg-emerald-600/90 hover:bg-emerald-500 py-2 rounded-xl text-xs font-bold transition cursor-pointer shadow">出席 👍</button>
+                <button onclick="submitAttendance('${m.id}', 'late')" class="bg-amber-600/90 hover:bg-amber-500 py-2 rounded-xl text-xs font-bold transition cursor-pointer shadow">遲到 ⏰</button>
+                <button onclick="submitAttendance('${m.id}', 'absent')" class="bg-rose-600/90 hover:bg-rose-500 py-2 rounded-xl text-xs font-bold transition cursor-pointer shadow">缺席 ❌</button>
+              </div>
+            ` : ''}
 
+            <!-- 隊長管理專區按鈕 -->
             ${isAdmin ? `
-              <div class="pt-1.5 border-t border-slate-700/40 space-y-2">
-                <button onclick="openLineupModal('${m.id}', '${m.opponent}')" class="w-full bg-yellow-500 hover:bg-yellow-400 text-slate-900 font-bold py-1.5 rounded text-xs cursor-pointer">🎯 隊長賽事排陣 (限出席隊友)</button>
+              <div class="pt-2 border-t border-slate-800 space-y-2">
+                <button onclick="openLineupModal('${m.id}', '${m.opponent}', ${isFinished})" class="w-full bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-slate-950 font-black py-2 rounded-xl text-xs transition cursor-pointer shadow flex items-center justify-center gap-1.5">
+                  <span>🎯</span> 隊長排陣 / 成績指派 ${isFinished ? '(全隊名單)' : '(限出席隊友)'}
+                </button>
                 <div class="flex gap-2">
-                  <button onclick="promptUpdateScore('${m.id}', '${m.score || ''}')" class="flex-1 bg-slate-700 hover:bg-slate-600 text-yellow-300 py-1.5 rounded text-xs font-semibold cursor-pointer">
-                    ✏️ ${isFinished ? '修改比分' : '輸入比分 (完賽)'}
+                  <button onclick="promptUpdateScore('${m.id}', '${m.score || ''}')" class="flex-1 bg-slate-800 hover:bg-slate-700 text-yellow-300 py-1.5 rounded-xl text-xs font-bold border border-slate-700 transition cursor-pointer">
+                    ✏️ ${isFinished ? '修改最終比分' : '輸入比分 (結算完賽)'}
                   </button>
-                  <button onclick="deleteMatch('${m.id}')" title="刪除此場賽事" class="bg-rose-900/60 hover:bg-rose-800 text-rose-300 px-3 py-1.5 rounded text-xs cursor-pointer">
+                  <button onclick="deleteMatch('${m.id}')" title="刪除此場賽事" class="bg-rose-950 hover:bg-rose-900 text-rose-300 border border-rose-800 px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer">
                     🗑️ 刪除
                   </button>
                 </div>
@@ -489,12 +637,16 @@
       }).join('');
     }
 
+    // 隊長手動新增賽事 (包含類型與直接完賽設定)
     async function submitNewMatch() {
+      const type = document.querySelector('input[name="newType"]:checked')?.value || 'match';
       const round = document.getElementById('newRound').value.trim();
       const date = document.getElementById('newDate').value.trim();
       const opponent = document.getElementById('newOpponent').value.trim();
       const isHome = document.getElementById('newIsHome').value === 'true';
       const venue = document.getElementById('newVenue').value.trim();
+      const isFinished = document.getElementById('newIsFinishedCheck').checked;
+      const score = document.getElementById('newScore').value.trim();
 
       if (!opponent || !date) {
         return alert('請至少填寫「比賽日期」及「對手隊名」！');
@@ -502,13 +654,18 @@
 
       const res = await apiRequest('POST', {
         action: 'addMatch',
-        round, date, opponent, isHome, venue
+        type, round, date, opponent, isHome, venue, isFinished, score
       });
 
       alert(res.message || '新增成功！');
       document.getElementById('newOpponent').value = '';
       document.getElementById('newVenue').value = '';
       document.getElementById('newRound').value = '';
+      document.getElementById('newDate').value = '';
+      document.getElementById('newScore').value = '';
+      document.getElementById('newIsFinishedCheck').checked = false;
+      togglePastMatchFields(false);
+
       loadMatches();
       switchTab('matches');
     }
@@ -536,7 +693,7 @@
     }
 
     /* ----------------------------------------------------
-       賽季賽制設定 (全下拉選單 Scroll Down Menu)
+       賽季賽制設定 (Scroll Down Menu 下拉選單)
     ---------------------------------------------------- */
     async function loadSeasonSettings() {
       const res = await apiRequest('GET', { action: 'getSettings' });
@@ -560,7 +717,6 @@
       }
     }
 
-    // 核心：生成每個 Leg 的全下拉選單 (Scroll Down Menu)
     function renderLegsEditor() {
       const container = document.getElementById('legsConfigList');
       const badge = document.getElementById('currentLegsCountBadge');
@@ -568,10 +724,8 @@
       if (!container) return;
 
       container.innerHTML = editingLegs.map((leg, idx) => {
-        // 清除純文字中的 "Leg X: " 前綴做比對
         const cleanName = leg.name.replace(/^Leg\s*\d+\s*:\s*/i, '').trim();
 
-        // 構造分類選項
         let optionsHtml = '';
         GAME_OPTIONS.forEach(g => {
           optionsHtml += `<optgroup label="${g.group}">`;
@@ -587,17 +741,16 @@
         });
 
         return `
-          <div class="flex items-center gap-2 bg-slate-800 p-2 rounded-lg border border-slate-700 shadow-sm">
-            <span class="text-xs text-yellow-400 font-mono font-bold w-12 text-center bg-slate-900/80 py-1.5 rounded">
-              Leg ${idx + 1}
+          <div class="flex items-center gap-2 bg-slate-900 p-2 rounded-xl border border-slate-800 shadow-sm">
+            <span class="text-xs text-yellow-400 font-mono font-bold w-12 text-center bg-slate-950 py-1.5 rounded-lg border border-slate-800">
+              #${idx + 1}
             </span>
             
-            <!-- 下拉選單 (Scroll Down Menu) -->
-            <select onchange="handleLegDropdownChange(${idx}, this.value)" class="flex-1 bg-slate-700 text-slate-100 text-xs p-2 rounded border border-slate-600 focus:outline-none focus:border-indigo-400 font-medium">
+            <select onchange="handleLegDropdownChange(${idx}, this.value)" class="flex-1 bg-slate-800 text-slate-100 text-xs p-2 rounded-lg border border-slate-700 focus:outline-none focus:border-indigo-400 font-medium">
               ${optionsHtml}
             </select>
 
-            <span class="text-[11px] font-bold px-2 py-1 rounded bg-slate-900 text-indigo-300 w-12 text-center">
+            <span class="text-[10px] font-black px-2 py-1 rounded-lg bg-indigo-950 text-indigo-300 border border-indigo-800 w-12 text-center">
               ${leg.count} 人
             </span>
 
@@ -609,7 +762,6 @@
       }).join('');
     }
 
-    // 當隊長在選單揀選不同比賽
     function handleLegDropdownChange(idx, combinedValue) {
       const [label, countStr] = combinedValue.split('|');
       if (editingLegs[idx]) {
@@ -632,7 +784,6 @@
     function removeLegRow(idx) {
       if (editingLegs.length <= 1) return alert('賽制至少需有 1 場比賽！');
       editingLegs.splice(idx, 1);
-      // 重新編號名稱
       editingLegs.forEach((leg, i) => {
         const clean = leg.name.replace(/^Leg\s*\d+\s*:\s*/i, '').trim();
         leg.name = `Leg ${i + 1}: ${clean}`;
@@ -646,7 +797,6 @@
       btn.innerText = '儲存中...';
       btn.disabled = true;
 
-      // 儲存前確保名稱都包含正確的 Leg X: 前綴
       const finalized = editingLegs.map((l, idx) => ({
         name: l.name.startsWith('Leg') ? l.name : `Leg ${idx + 1}: ${l.name}`,
         count: l.count
@@ -664,7 +814,7 @@
     }
 
     /* ----------------------------------------------------
-       排陣視窗 & 簽到詳情
+       排陣視窗、簽到詳情 & AI 智能排陣核心算法
     ---------------------------------------------------- */
     async function viewMatchDetails(matchId, opponent, venue, score) {
       document.getElementById('modalMatchTitle').innerText = `VS ${opponent}`;
@@ -679,35 +829,36 @@
       const captainLineup = res.captainLineup || [];
       const legFormat = res.legFormat || [];
       const atts = res.attendanceList || [];
+      const allActive = res.allActiveUsers || [];
 
       document.getElementById('modalLegCountTag').innerText = `(全 ${legFormat.length} 場)`;
 
       if (captainLineup.length === 0) {
-        document.getElementById('modalLineupList').innerHTML = '<p class="text-slate-400 text-center py-2">隊長尚未提交對賽出戰排陣。</p>';
+        document.getElementById('modalLineupList').innerHTML = '<p class="text-slate-400 text-center py-3">隊長尚未提交對賽出戰排陣。</p>';
       } else {
         document.getElementById('modalLineupList').innerHTML = legFormat.map((leg, idx) => {
           const playerIds = captainLineup[idx] || [];
           const names = playerIds.map(pid => {
-            const p = atts.find(u => String(u.userId) === String(pid));
-            return p ? `${p.name} (Rt.${p.rating})` : '未指定';
+            const p = atts.find(u => String(u.userId) === String(pid)) || allActive.find(u => String(u.userId) === String(pid));
+            return p ? `<b class="text-white">${p.name}</b> (Rt.${p.rating})` : '<span class="text-slate-500">未指定</span>';
           }).join('、');
           return `
-            <div class="border-b border-slate-700/50 pb-1.5 last:border-0 flex justify-between items-center">
-              <span class="text-yellow-400 font-semibold">${leg.name}</span>
-              <span class="text-slate-200">${names || '<span class="text-slate-500">未排</span>'}</span>
+            <div class="border-b border-slate-800/80 pb-2 last:border-0 flex justify-between items-center">
+              <span class="text-yellow-400 font-bold">${leg.name}</span>
+              <span class="text-slate-300">${names || '<span class="text-slate-500">未排</span>'}</span>
             </div>
           `;
         }).join('');
       }
 
       if (atts.length === 0) {
-        document.getElementById('modalAttList').innerHTML = '<p class="text-slate-400">目前尚無隊友簽到。</p>';
+        document.getElementById('modalAttList').innerHTML = '<p class="text-slate-400 py-2">目前尚無隊友簽到紀錄（若為直接補入之賽事，可直接查看排陣名單）。</p>';
       } else {
         document.getElementById('modalAttList').innerHTML = atts.map(a => {
           let b = a.status === 'attending' ? '<span class="text-emerald-400 font-bold">出席</span>' :
                  (a.status === 'late' ? '<span class="text-amber-400 font-bold">遲到</span>' : '<span class="text-rose-400">缺席</span>');
           return `
-            <div class="flex justify-between items-center bg-slate-700/40 p-2 rounded">
+            <div class="flex justify-between items-center bg-slate-800/60 p-2.5 rounded-xl border border-slate-800">
               <span><b>${a.name}</b> (Rt. ${a.rating || 0})</span>
               ${b}
             </div>
@@ -716,39 +867,58 @@
       }
     }
 
-    async function openLineupModal(matchId, opponent) {
+    async function openLineupModal(matchId, opponent, isFinishedMatch = false) {
       currentLineupMatchId = matchId;
       const container = document.getElementById('lineupLegsContainer');
-      container.innerHTML = '<p class="text-center text-slate-400 py-4">讀取中...</p>';
+      const reasonBadge = document.getElementById('aiReasoningBadge');
+      if (reasonBadge) reasonBadge.classList.add('hidden');
+
+      container.innerHTML = '<p class="text-center text-slate-400 py-6">讀取賽事隊員資料中...</p>';
       document.getElementById('lineupModal').classList.remove('hidden');
 
       const res = await apiRequest('GET', { action: 'getMatchDetails', matchId });
       if (!res.success) return alert('載入失敗');
 
-      currentAvailablePlayers = (res.attendanceList || []).filter(p => p.status === 'attending' || p.status === 'late');
       currentLegFormat = res.legFormat || [];
+      currentAllTeamUsers = res.allActiveUsers || [];
       const saved = res.captainLineup || [];
 
-      document.getElementById('lineupModalHeaderTitle').innerText = `🎯 隊長排陣 (全 ${currentLegFormat.length} 場)`;
+      // 若該場次已完賽或隊長直接記錄，選用全體 active 隊員；否則優先選用出席與遲到隊員
+      const checkedInPlayers = (res.attendanceList || []).filter(p => p.status === 'attending' || p.status === 'late');
+      
+      if (isFinishedMatch || checkedInPlayers.length === 0) {
+        currentAvailablePlayers = currentAllTeamUsers;
+        document.getElementById('lineupModalSub').innerText = '現正使用【全隊隊員名單】（包含未簽到隊員，可直接記錄）';
+      } else {
+        currentAvailablePlayers = checkedInPlayers;
+        document.getElementById('lineupModalSub').innerText = '已自動篩選【已簽到出席 / 遲到】之隊友';
+      }
+
+      document.getElementById('lineupModalHeaderTitle').innerText = `🎯 隊長排陣 (${currentLegFormat.length} 場對賽)`;
 
       if (currentAvailablePlayers.length === 0) {
         container.innerHTML = `
-          <div class="text-center py-6">
-            <p class="text-rose-400 font-bold mb-1">⚠️ 尚無出席隊友</p>
-            <p class="text-xs text-slate-400">需有隊員在該場次按「出席」或「遲到」方可選派排陣。</p>
+          <div class="text-center py-8 bg-slate-950 rounded-2xl border border-slate-800">
+            <p class="text-rose-400 font-bold mb-1">⚠️ 尚無任何可用隊員名單</p>
+            <p class="text-xs text-slate-400">請先確認後台已有活躍隊員，或有隊友在賽程中簽到。</p>
           </div>
         `;
         return;
       }
 
+      renderLineupLegSelects(saved);
+    }
+
+    function renderLineupLegSelects(assignedData = []) {
+      const container = document.getElementById('lineupLegsContainer');
       container.innerHTML = currentLegFormat.map((leg, legIdx) => {
-        const assigned = saved[legIdx] || [];
+        const assigned = assignedData[legIdx] || [];
         let selects = '';
         for (let i = 0; i < leg.count; i++) {
           const selectedPid = assigned[i] || '';
           selects += `
-            <select data-leg="${legIdx}" data-slot="${i}" class="lineup-select w-full p-2.5 rounded bg-slate-700 text-xs border border-slate-600 mb-1.5 focus:border-yellow-400">
-              <option value="">-- 出戰隊員 ${i + 1} --</option>
+            <select data-leg="${legIdx}" data-slot="${i}" class="lineup-select w-full p-2.5 rounded-xl bg-slate-800 text-xs border border-slate-700 mb-1.5 focus:border-yellow-400 font-medium">
+              <option value="">-- 選派隊員 ${i + 1} --</option>
               ${currentAvailablePlayers.map(p => `
                 <option value="${p.userId}" ${String(p.userId) === String(selectedPid) ? 'selected' : ''}>
                   ${p.name} (Rating: ${p.rating})
@@ -758,12 +928,88 @@
           `;
         }
         return `
-          <div class="bg-slate-700/40 p-2.5 rounded-xl border border-slate-600/60">
-            <label class="block font-bold text-yellow-400 mb-1.5">${leg.name} (${leg.count} 人出戰)</label>
+          <div class="bg-slate-950 p-3 rounded-2xl border border-slate-800">
+            <div class="flex justify-between items-center mb-2">
+              <label class="font-black text-yellow-400 text-xs">${leg.name}</label>
+              <span class="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-md font-bold">${leg.count} 人賽</span>
+            </div>
             ${selects}
           </div>
         `;
       }).join('');
+    }
+
+    /* ----------------------------------------------------
+       🤖 AI 智能陣容推薦演算法 (AI Lineup Recommendation)
+    ---------------------------------------------------- */
+    function triggerAiLineupSuggestion() {
+      if (!currentAvailablePlayers || currentAvailablePlayers.length === 0) {
+        return alert('目前沒有可用隊員名單，無法進行 AI 分析。');
+      }
+
+      // 依據隊友的 Rating 鏢力由高至低排序
+      const sortedPlayers = [...currentAvailablePlayers].sort((a, b) => (parseFloat(b.rating) || 0) - (parseFloat(a.rating) || 0));
+
+      const aiLineup = [];
+      const appearanceCounts = {};
+      sortedPlayers.forEach(p => { appearanceCounts[p.userId] = 0; });
+
+      // AI 策略分配：
+      // 1. 單打項目 (Singles)：優先派上 Rating 最高的單打高手
+      // 2. 雙打項目 (Doubles)：高低互補平衡搭檔 (High + Mid) 提高雙打贏面
+      // 3. 三人/四人賽 (Trios / Gallon)：分配出場次數較少之隊員，確保全員戰力與出場平衡
+      currentLegFormat.forEach((leg, legIdx) => {
+        aiLineup[legIdx] = [];
+        const needed = leg.count;
+
+        // 依目前出場次數由少到多、再依鏢力最佳匹配
+        let candidates = [...sortedPlayers].sort((a, b) => {
+          if (appearanceCounts[a.userId] !== appearanceCounts[b.userId]) {
+            return appearanceCounts[a.userId] - appearanceCounts[b.userId];
+          }
+          return (parseFloat(b.rating) || 0) - (parseFloat(a.rating) || 0);
+        });
+
+        // 若是單打，直接取候選人中 Rating 最高且出場未超標的
+        if (needed === 1) {
+          const chosen = candidates[0];
+          if (chosen) {
+            aiLineup[legIdx].push(chosen.userId);
+            appearanceCounts[chosen.userId]++;
+          }
+        } else if (needed === 2) {
+          // 雙打：一位高分 + 一位穩定主力
+          const p1 = candidates[0];
+          const p2 = candidates[1] || candidates[0];
+          if (p1) { aiLineup[legIdx].push(p1.userId); appearanceCounts[p1.userId]++; }
+          if (p2 && p2.userId !== p1.userId) { aiLineup[legIdx].push(p2.userId); appearanceCounts[p2.userId]++; }
+        } else {
+          // 隊制賽：依序補足人數
+          for (let i = 0; i < needed; i++) {
+            const p = candidates[i] || sortedPlayers[i % sortedPlayers.length];
+            if (p) {
+              aiLineup[legIdx].push(p.userId);
+              appearanceCounts[p.userId]++;
+            }
+          }
+        }
+      });
+
+      // 將 AI 排陣結果填入畫面選單
+      aiLineup.forEach((legPids, legIdx) => {
+        legPids.forEach((pid, slotIdx) => {
+          const sel = document.querySelector(`.lineup-select[data-leg="${legIdx}"][data-slot="${slotIdx}"]`);
+          if (sel) sel.value = pid;
+        });
+      });
+
+      const reasonBadge = document.getElementById('aiReasoningBadge');
+      if (reasonBadge) {
+        reasonBadge.classList.remove('hidden');
+        reasonBadge.innerHTML = `
+          <span>🧠 <b>AI 排陣策略完成：</b>已根據隊員近期鏢力（最高: ${sortedPlayers[0]?.name || ''} Rt.${sortedPlayers[0]?.rating || ''}）優化單打王牌及雙打互補配置！隊長可按需要自由微調。</span>
+        `;
+      }
     }
 
     async function submitLineup() {
@@ -778,7 +1024,7 @@
       });
 
       const res = await apiRequest('POST', { action: 'saveLineup', matchId: currentLineupMatchId, lineup: lineup });
-      alert(res.message || '排陣已更新！');
+      alert(res.message || '排陣已更新發布！');
       closeModal('lineupModal');
       loadMatches();
     }
@@ -788,10 +1034,10 @@
       const res = await apiRequest('GET', { action: 'getStats' });
       if (!res.success || !res.stats) return;
       tbody.innerHTML = res.stats.map(s => `
-        <tr>
-          <td class="p-3 font-semibold">${s.name}</td>
-          <td class="p-3">${s.rating}</td>
-          <td class="p-3 text-emerald-400 font-bold">${s.attendedCount} 場</td>
+        <tr class="hover:bg-slate-800/40 transition">
+          <td class="p-3.5 font-bold text-white">${s.name}</td>
+          <td class="p-3.5 font-mono text-yellow-400 font-bold">${s.rating}</td>
+          <td class="p-3.5 text-emerald-400 font-black">${s.attendedCount} 場</td>
         </tr>
       `).join('');
     }
@@ -801,10 +1047,10 @@
       const res = await apiRequest('GET', { action: 'getUsers' });
       if (!res.success || !res.users) return;
       const pending = res.users.filter(u => u.status === 'pending');
-      pendingList.innerHTML = pending.length === 0 ? '<p class="text-slate-400 text-xs">目前沒有待審核會員。</p>' : pending.map(u => `
-        <div class="flex justify-between items-center bg-slate-700 p-2 rounded">
-          <span>${u.name} (Rt.${u.rating})</span>
-          <button onclick="activateUser('${u.id}')" class="bg-emerald-600 px-2 py-1 rounded text-xs cursor-pointer">啟用</button>
+      pendingList.innerHTML = pending.length === 0 ? '<p class="text-slate-400 text-xs py-2">目前沒有待審核會員。</p>' : pending.map(u => `
+        <div class="flex justify-between items-center bg-slate-800 p-2.5 rounded-xl border border-slate-700">
+          <span class="font-bold text-white">${u.name} (Rt.${u.rating})</span>
+          <button onclick="activateUser('${u.id}')" class="bg-emerald-600 hover:bg-emerald-500 font-bold px-3 py-1 rounded-lg text-xs cursor-pointer shadow">啟用</button>
         </div>
       `).join('');
     }
@@ -812,7 +1058,7 @@
     async function activateUser(userId) {
       const res = await apiRequest('POST', { action: 'activateUser', userId });
       if (res.success) {
-        alert('已啟用！');
+        alert('已啟用隊員帳號！');
         loadAdminData();
       }
     }
