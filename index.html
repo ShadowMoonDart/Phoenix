@@ -22,7 +22,7 @@
     <div id="userInfo" class="text-xs bg-slate-800 px-3 py-1.5 rounded-full border border-slate-700">尚未登入</div>
   </header>
 
-  <!-- 標籤導航欄 (未登入或隊員登入時，完全不顯示隊長管理按鈕) -->
+  <!-- 標籤導航欄 -->
   <nav class="flex justify-around bg-slate-900 border-b border-slate-800 text-xs font-bold sticky top-16 z-30">
     <button onclick="switchTab('matches')" id="btn-matches" class="tab-btn py-3 px-3 border-b-2 border-rose-500 text-rose-400 flex items-center gap-1.5 transition">
       <span>📅</span> 賽程簽到
@@ -84,6 +84,7 @@
             <tr>
               <th class="p-3">隊員</th>
               <th class="p-3">即時 Rating</th>
+              <th class="p-3">01 / Crik 場均</th>
               <th class="p-3">出席場數</th>
               <th class="p-3">Leg 勝率</th>
             </tr>
@@ -93,7 +94,7 @@
       </div>
     </section>
 
-    <!-- 3. 隊長管理分頁 (只限隊長登入可見) -->
+    <!-- 3. 隊長管理分頁 -->
     <section id="tab-admin" class="hidden space-y-4">
       <div class="flex justify-between items-center bg-amber-500/10 p-3 rounded-2xl border border-amber-500/30">
         <h2 class="text-sm font-black text-yellow-400 flex items-center gap-1.5">
@@ -102,7 +103,7 @@
         <span class="text-[10px] bg-yellow-500 text-slate-950 font-black px-2 py-0.5 rounded">隊長專用</span>
       </div>
 
-      <!-- 手動新增賽事面板 -->
+      <!-- 新增賽程 -->
       <div class="bg-slate-900 p-4 rounded-2xl border border-yellow-500/40 space-y-3.5 shadow-xl">
         <div class="flex justify-between items-center border-b border-slate-800 pb-2">
           <h3 class="text-xs font-black text-yellow-400 flex items-center gap-1.5">
@@ -165,7 +166,6 @@
           </div>
         </div>
 
-        <!-- 補入已完賽賽事選項 -->
         <div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700 space-y-2">
           <label class="flex items-center gap-2 cursor-pointer">
             <input type="checkbox" id="newIsFinishedCheck" onchange="togglePastMatchFields(this.checked)" class="w-4 h-4 rounded text-rose-600 focus:ring-0">
@@ -179,11 +179,11 @@
         </div>
 
         <button type="button" onclick="submitNewMatch()" class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold p-3 rounded-xl text-xs transition cursor-pointer shadow-lg flex items-center justify-center gap-1.5">
-          <span>🚀</span> 確認建立賽程 (自動套用當前 Leg 規格)
+          <span>🚀</span> 確認建立賽程 (自動套用最新賽制規格)
         </button>
       </div>
 
-      <!-- 賽季賽制規格設定 -->
+      <!-- 賽季規格設定 -->
       <div class="bg-slate-900 p-4 rounded-2xl border border-indigo-500/40 space-y-3 shadow-xl">
         <div class="flex justify-between items-center border-b border-slate-800 pb-2">
           <h3 class="text-xs font-black text-indigo-400 flex items-center gap-1.5">
@@ -214,7 +214,7 @@
         </div>
       </div>
 
-      <!-- 待審批會員名單 -->
+      <!-- 待審批名單 -->
       <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800 shadow-lg">
         <h3 class="text-xs font-bold mb-2.5 text-slate-300 flex items-center gap-1.5">
           <span>👥</span> 待審核啟用會員名單
@@ -253,7 +253,7 @@
     </div>
   </div>
 
-  <!-- Modal 2：隊長排陣 Modal (包含 AI 智能推薦) -->
+  <!-- Modal 2：隊長排陣 Modal -->
   <div id="lineupModal" class="fixed inset-0 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
     <div class="bg-slate-900 rounded-3xl max-w-lg w-full max-h-[92vh] flex flex-col border border-yellow-500/50 shadow-2xl">
       <div class="p-4 border-b border-slate-800 bg-gradient-to-r from-yellow-500/10 to-transparent">
@@ -267,13 +267,12 @@
           <button onclick="closeModal('lineupModal')" class="w-8 h-8 rounded-full bg-slate-800 text-slate-300 hover:bg-slate-700 flex items-center justify-center font-bold text-base cursor-pointer">&times;</button>
         </div>
 
-        <!-- AI 智能排陣 -->
         <div class="mt-3 bg-gradient-to-r from-indigo-900/40 via-purple-900/30 to-slate-900 p-2.5 rounded-2xl border border-indigo-500/40 flex justify-between items-center">
           <div>
             <p class="text-xs font-black text-indigo-300 flex items-center gap-1">
-              <span>🧠</span> AI 陣容智能推算 (結合近況數據)
+              <span>🧠</span> AI 專項數據智能排陣
             </p>
-            <p class="text-[10px] text-slate-400">依據即時 Rating 與歷史勝率自動最佳化配對</p>
+            <p class="text-[10px] text-slate-400">依據歷史 PPD (01) / MPR (Cricket) 最佳化陣容</p>
           </div>
           <button type="button" onclick="triggerAiLineupSuggestion()" class="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold px-3 py-1.5 rounded-xl text-xs transition shadow cursor-pointer">
             ✨ 一鍵 AI 排陣
@@ -292,7 +291,7 @@
     </div>
   </div>
 
-  <!-- Modal 3：【全新】隊長專用 - 各 Leg 賽果及選手詳細個人數據錄入/修改視窗 -->
+  <!-- Modal 3：隊長專用 - 各 Leg 賽果及選手詳細個人數據錄入/修改視窗 -->
   <div id="statsInputModal" class="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden">
     <div class="bg-slate-900 rounded-3xl max-w-lg w-full max-h-[92vh] flex flex-col border border-emerald-500/60 shadow-2xl">
       <div class="p-4 border-b border-slate-800 bg-slate-950/70 flex justify-between items-center">
@@ -300,7 +299,7 @@
           <h3 class="text-sm font-black text-emerald-400 flex items-center gap-1.5">
             <span>📝</span> 錄入 / 修改比賽回合與選手數據
           </h3>
-          <p class="text-[11px] text-slate-400 mt-0.5">數據儲存後將即時自動更新選手 Rating</p>
+          <p class="text-[11px] text-slate-400 mt-0.5">數據儲存後將即時自動更新選手 Rating 與歷史戰績庫</p>
         </div>
         <button onclick="closeModal('statsInputModal')" class="w-8 h-8 rounded-full bg-slate-800 text-slate-300 hover:bg-slate-700 flex items-center justify-center font-bold text-base cursor-pointer">&times;</button>
       </div>
@@ -311,9 +310,7 @@
           <input type="text" id="statsInputTotalScore" placeholder="例如: 5-4" class="p-2 rounded-xl bg-slate-900 border border-emerald-500/50 text-yellow-300 font-black text-center text-sm w-32 focus:outline-none focus:border-emerald-400">
         </div>
 
-        <div id="statsInputLegsContainer" class="space-y-3">
-          <!-- 動態載入各個 Leg 的選手數據填寫框 -->
-        </div>
+        <div id="statsInputLegsContainer" class="space-y-3"></div>
       </div>
 
       <div class="p-4 border-t border-slate-800 bg-slate-950/60">
@@ -341,6 +338,7 @@
     let currentAvailablePlayers = [];
     let currentAllTeamUsers = [];
     let currentLegFormat = [];
+    let systemGlobalLegFormat = []; // 儲存全局最新的 Leg Format
 
     const GAME_OPTIONS = [
       {
@@ -382,31 +380,31 @@
 
     const PRESETS = {
       phoenix9: [
-        { name: "男單", count: 1 },
-        { name: "女單", count: 1 },
-        { name: "雙打(男子)", count: 2 },
-        { name: "雙打(混合)", count: 2 },
-        { name: "單打 701", count: 1 },
-        { name: "雙打 701", count: 2 },
-        { name: "雙打 Cricket", count: 2 },
-        { name: "三人賽 901", count: 3 },
-        { name: "隊制四人賽 Gallon 1101", count: 4 }
+        { name: "Leg 1: 男單", count: 1 },
+        { name: "Leg 2: 女單", count: 1 },
+        { name: "Leg 3: 雙打(男子)", count: 2 },
+        { name: "Leg 4: 雙打(混合)", count: 2 },
+        { name: "Leg 5: 單打 701", count: 1 },
+        { name: "Leg 6: 雙打 701", count: 2 },
+        { name: "Leg 7: 雙打 Cricket", count: 2 },
+        { name: "Leg 8: 三人賽 901", count: 3 },
+        { name: "Leg 9: 隊制四人賽 Gallon 1101", count: 4 }
       ],
       standard7: [
-        { name: "男單", count: 1 },
-        { name: "女單", count: 1 },
-        { name: "雙打(男子)", count: 2 },
-        { name: "雙打(混合)", count: 2 },
-        { name: "單打 701", count: 1 },
-        { name: "雙打 701", count: 2 },
-        { name: "隊制四人賽 Gallon 1101", count: 4 }
+        { name: "Leg 1: 男單", count: 1 },
+        { name: "Leg 2: 女單", count: 1 },
+        { name: "Leg 3: 雙打(男子)", count: 2 },
+        { name: "Leg 4: 雙打(混合)", count: 2 },
+        { name: "Leg 5: 單打 701", count: 1 },
+        { name: "Leg 6: 雙打 701", count: 2 },
+        { name: "Leg 7: 隊制四人賽 Gallon 1101", count: 4 }
       ],
       cup5: [
-        { name: "單打 501", count: 1 },
-        { name: "單打 Cricket", count: 1 },
-        { name: "雙打(混合)", count: 2 },
-        { name: "雙打 Cricket", count: 2 },
-        { name: "隊制四人賽 Gallon 1101", count: 4 }
+        { name: "Leg 1: 單打 501", count: 1 },
+        { name: "Leg 2: 單打 Cricket", count: 1 },
+        { name: "Leg 3: 雙打(混合)", count: 2 },
+        { name: "Leg 4: 雙打 Cricket", count: 2 },
+        { name: "Leg 5: 隊制四人賽 Gallon 1101", count: 4 }
       ]
     };
 
@@ -574,7 +572,8 @@
           if (badge) badge.innerText = setRes.settings.teamName || '我的飛鏢隊';
           if (setRes.settings.legFormat) {
             try { 
-              editingLegs = JSON.parse(setRes.settings.legFormat);
+              systemGlobalLegFormat = JSON.parse(setRes.settings.legFormat);
+              editingLegs = JSON.parse(JSON.stringify(systemGlobalLegFormat));
               const previewBadge = document.getElementById('adminLegFormatPreview');
               if (previewBadge) previewBadge.innerText = `套用賽制: 共 ${editingLegs.length} 場`;
             } catch(e) {}
@@ -607,7 +606,7 @@
           const rawRound = m.round ? String(m.round) : '';
           const roundText = rawRound ? (rawRound.includes('輪') ? rawRound : `第 ${rawRound} 輪`) : '特別賽事';
           const matchType = String(m.type || 'match');
-          const legsCount = (m.legFormat && m.legFormat.length) ? m.legFormat.length : editingLegs.length;
+          const legsCount = (m.legFormat && m.legFormat.length) ? m.legFormat.length : (systemGlobalLegFormat.length || 9);
 
           let typeBadge = '<span class="text-[10px] bg-rose-950 text-rose-300 border border-rose-800 px-2 py-0.5 rounded-full font-bold">🏆 正式聯賽</span>';
           if (matchType === 'friendly') {
@@ -642,7 +641,7 @@
                 `}
               </div>
 
-              <!-- 特大日期與地點 -->
+              <!-- 日期與地點 -->
               <div class="bg-slate-950/80 p-3 rounded-2xl border border-slate-800/80 flex items-center gap-3">
                 <div class="text-2xl p-2 bg-slate-900 rounded-xl border border-slate-800">📅</div>
                 <div class="flex-1">
@@ -685,7 +684,7 @@
                 </div>
               ` : ''}
 
-              <!-- 隊長專用操作：排陣、輸入個人回合數據、刪除 -->
+              <!-- 隊長操作按鈕 -->
               ${isAdmin ? `
                 <div class="pt-2 border-t border-slate-800 space-y-2">
                   <button onclick="openLineupModal('${m.id}', '${m.opponent}', ${isFinished ? 'true' : 'false'})" class="w-full bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-slate-950 font-black py-2 rounded-xl text-xs transition cursor-pointer shadow flex items-center justify-center gap-1.5">
@@ -693,7 +692,7 @@
                   </button>
                   
                   <button onclick="openStatsInputModal('${m.id}', '${m.opponent}', '${m.score || ''}')" class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black py-2 rounded-xl text-xs transition cursor-pointer shadow flex items-center justify-center gap-1.5">
-                    <span>📝</span> 錄入 / 修改回合選手表現 (PPD/MPR)
+                    <span>📝</span> 錄入 / 修改回合選手表現 (按排陣名單)
                   </button>
 
                   <div class="flex gap-2">
@@ -728,7 +727,7 @@
         return alert('請至少填寫「比賽日期」及「對手隊名」！');
       }
 
-      // 將目前配置的 editingLegs 作為本場賽事獨立綁定的規格一同送出
+      // 套用當前隊長管理中儲存的賽制
       const res = await apiRequest('POST', {
         action: 'addMatch',
         type, round, date, opponent, isHome, venue, isFinished, score,
@@ -770,9 +769,7 @@
       await loadMatches();
     }
 
-    /* ----------------------------------------------------
-       賽季規格管理
-    ---------------------------------------------------- */
+    /* 賽制管理 */
     function selectPreset(presetKey) {
       if (presetKey === 'custom') return;
       if (PRESETS[presetKey]) {
@@ -862,12 +859,11 @@
       btn.innerText = '💾 儲存並套用新賽制';
       btn.disabled = false;
       alert(res.message || '賽制已更新！');
+      systemGlobalLegFormat = finalized;
       await loadMatches();
     }
 
-    /* ----------------------------------------------------
-       詳細資訊查看視窗 (包含選手 Leg 數據)
-    ---------------------------------------------------- */
+    /* 查看詳情 */
     async function viewMatchDetails(matchId, opponent, venue, score) {
       document.getElementById('modalMatchTitle').innerText = `VS ${opponent}`;
       document.getElementById('modalMatchSubtitle').innerText = `${venue ? '地點: ' + venue : ''} ${score ? ' | 比分: ' + score : ''}`;
@@ -879,7 +875,7 @@
       if (!res.success) return;
 
       const captainLineup = res.captainLineup || [];
-      const legFormat = res.legFormat || [];
+      const legFormat = (res.legFormat && res.legFormat.length > 0) ? res.legFormat : systemGlobalLegFormat;
       const atts = res.attendanceList || [];
       const allActive = res.allActiveUsers || [];
       const legStats = res.legStats || [];
@@ -897,7 +893,7 @@
           const names = playerIds.map(pid => {
             const p = atts.find(u => String(u.userId) === String(pid)) || allActive.find(u => String(u.userId) === String(pid));
             const pStat = legStats.find(s => s.legIndex === idx && String(s.userId) === String(pid));
-            const statText = pStat && pStat.statValue ? ` [${pStat.statType.toUpperCase()}: ${pStat.statValue}]` : '';
+            const statText = (pStat && pStat.statValue) ? ` [${pStat.statType.toUpperCase()}: ${pStat.statValue}]` : '';
             return p ? `<span class="inline-block"><b class="text-white">${p.name}</b><span class="text-emerald-400 text-[10px]">${statText}</span></span>` : '<span class="text-slate-500">未指定</span>';
           }).join('、');
 
@@ -928,9 +924,7 @@
       }
     }
 
-    /* ----------------------------------------------------
-       隊長排陣視窗與 AI 智能演算
-    ---------------------------------------------------- */
+    /* 隊長排陣 */
     async function openLineupModal(matchId, opponent, isFinishedMatch = false) {
       if (!currentUser || currentUser.role !== 'admin') {
         return alert('⚠️ 只有隊長有權限進行排陣操作！');
@@ -941,13 +935,14 @@
       const reasonBadge = document.getElementById('aiReasoningBadge');
       if (reasonBadge) reasonBadge.classList.add('hidden');
 
-      container.innerHTML = '<p class="text-center text-slate-400 py-6">讀取賽事專屬規格中...</p>';
+      container.innerHTML = '<p class="text-center text-slate-400 py-6">載入最新賽季賽制及出賽名單中...</p>';
       document.getElementById('lineupModal').classList.remove('hidden');
 
       const res = await apiRequest('GET', { action: 'getMatchDetails', matchId });
       if (!res.success) return alert('載入失敗');
 
-      currentLegFormat = res.legFormat || [];
+      // 核心修正 1：排陣嚴格依據當前已保存之最新賽制 (優先取 res.legFormat，否則取 systemGlobalLegFormat)
+      currentLegFormat = (res.legFormat && res.legFormat.length > 0) ? res.legFormat : systemGlobalLegFormat;
       currentAllTeamUsers = res.allActiveUsers || [];
       const saved = res.captainLineup || [];
 
@@ -977,7 +972,7 @@
               <option value="">-- 選派隊員 ${i + 1} --</option>
               ${currentAvailablePlayers.map(p => `
                 <option value="${p.userId}" ${String(p.userId) === String(selectedPid) ? 'selected' : ''}>
-                  ${p.name} (Rating: ${p.rating})
+                  ${p.name} (Rating: ${p.rating} | PPD:${p.avgPpd || '-'} MPR:${p.avgMpr || '-'})
                 </option>
               `).join('')}
             </select>
@@ -995,24 +990,39 @@
       }).join('');
     }
 
+    /* 升級版 AI 陣容智能推算 (結合歷史 PPD / MPR 專項數據) */
     function triggerAiLineupSuggestion() {
       if (!currentAvailablePlayers || currentAvailablePlayers.length === 0) {
         return alert('目前沒有可用隊員名單，無法進行 AI 分析。');
       }
 
-      const sortedPlayers = [...currentAvailablePlayers].sort((a, b) => (parseFloat(b.rating) || 0) - (parseFloat(a.rating) || 0));
       const aiLineup = [];
       const appearanceCounts = {};
-      sortedPlayers.forEach(p => { appearanceCounts[p.userId] = 0; });
+      currentAvailablePlayers.forEach(p => { appearanceCounts[p.userId] = 0; });
 
       currentLegFormat.forEach((leg, legIdx) => {
         aiLineup[legIdx] = [];
         const needed = leg.count;
+        const isCricket = leg.name.toLowerCase().includes('cricket');
 
-        let candidates = [...sortedPlayers].sort((a, b) => {
+        // 核心修正 3：專項數據排序
+        let candidates = [...currentAvailablePlayers].sort((a, b) => {
+          // 優先平衡出場率
           if (appearanceCounts[a.userId] !== appearanceCounts[b.userId]) {
             return appearanceCounts[a.userId] - appearanceCounts[b.userId];
           }
+          // Cricket 優先看 MPR
+          if (isCricket) {
+            const mprA = parseFloat(a.avgMpr) || 0;
+            const mprB = parseFloat(b.avgMpr) || 0;
+            if (mprA !== mprB) return mprB - mprA;
+          } else {
+            // 01 優先看 PPD
+            const ppdA = parseFloat(a.avgPpd) || 0;
+            const ppdB = parseFloat(b.avgPpd) || 0;
+            if (ppdA !== ppdB) return ppdB - ppdA;
+          }
+          // 最後看綜合 Rating
           return (parseFloat(b.rating) || 0) - (parseFloat(a.rating) || 0);
         });
 
@@ -1023,14 +1033,14 @@
             appearanceCounts[chosen.userId]++;
           }
         } else if (needed === 2) {
-          // 強弱互補配置 (戰力最優平衡)
+          // 強弱搭檔配對策略
           const p1 = candidates[0];
           const p2 = candidates[candidates.length - 1] || candidates[1];
           if (p1) { aiLineup[legIdx].push(p1.userId); appearanceCounts[p1.userId]++; }
           if (p2 && p2.userId !== p1.userId) { aiLineup[legIdx].push(p2.userId); appearanceCounts[p2.userId]++; }
         } else {
           for (let i = 0; i < needed; i++) {
-            const p = candidates[i] || sortedPlayers[i % sortedPlayers.length];
+            const p = candidates[i] || currentAvailablePlayers[i % currentAvailablePlayers.length];
             if (p) {
               aiLineup[legIdx].push(p.userId);
               appearanceCounts[p.userId]++;
@@ -1039,6 +1049,7 @@
         }
       });
 
+      // 填入選單
       aiLineup.forEach((legPids, legIdx) => {
         legPids.forEach((pid, slotIdx) => {
           const sel = document.querySelector(`.lineup-select[data-leg="${legIdx}"][data-slot="${slotIdx}"]`);
@@ -1050,7 +1061,7 @@
       if (reasonBadge) {
         reasonBadge.classList.remove('hidden');
         reasonBadge.innerHTML = `
-          <span>🧠 <b>AI 陣容平衡策略完成：</b>已按隊員最新 Rating 及出賽平衡完成佈陣！隊長可隨時手動微調。</span>
+          <span>🧠 <b>AI 專項推算完成：</b>01 賽局已優先配對高 PPD 選手，Cricket 已配對高 MPR 選手，並已平衡隊友上場頻率！</span>
         `;
       }
     }
@@ -1066,15 +1077,18 @@
         }
       });
 
-      const res = await apiRequest('POST', { action: 'saveLineup', matchId: currentLineupMatchId, lineup: lineup });
+      const res = await apiRequest('POST', { 
+        action: 'saveLineup', 
+        matchId: currentLineupMatchId, 
+        lineup: lineup,
+        legFormat: currentLegFormat
+      });
       alert(res.message || '排陣已更新發布！');
       closeModal('lineupModal');
       await loadMatches();
     }
 
-    /* ----------------------------------------------------
-       【全新核心】隊長專用 - 各 Leg 賽果及選手詳細個人數據錄入/修改
-    ---------------------------------------------------- */
+    /* 核心修正 2：錄入/修改選手數據按排陣後的選手名來顯示 */
     async function openStatsInputModal(matchId, opponent, currentScore) {
       if (!currentUser || currentUser.role !== 'admin') {
         return alert('⚠️ 只有隊長有權限進行選手賽事數據錄入！');
@@ -1089,13 +1103,18 @@
       const res = await apiRequest('GET', { action: 'getMatchDetails', matchId });
       if (!res.success) return alert('載入賽事資料失敗');
 
-      const legs = res.legFormat || [];
+      const legs = (res.legFormat && res.legFormat.length > 0) ? res.legFormat : systemGlobalLegFormat;
       const lineup = res.captainLineup || [];
       const allUsers = res.allActiveUsers || [];
       const savedStats = res.legStats || [];
 
-      if (legs.length === 0) {
-        container.innerHTML = '<p class="text-center text-rose-400 py-4">此賽事尚未配置 Leg Format 規格！</p>';
+      if (!lineup || lineup.length === 0 || lineup.every(arr => arr.length === 0)) {
+        container.innerHTML = `
+          <div class="text-center py-6 space-y-2">
+            <p class="text-amber-400 font-bold">⚠️ 此賽事尚未進行隊長排陣！</p>
+            <p class="text-slate-400 text-xs">請先點擊「隊長排陣出戰指派」選派隊員後，再進行成績錄入。</p>
+          </div>
+        `;
         return;
       }
 
@@ -1104,47 +1123,52 @@
         const isCricket = leg.name.toLowerCase().includes('cricket');
         const defaultStatType = isCricket ? 'mpr' : 'ppd';
 
-        // 讀取該 Leg 已保存的勝負
         const existingLegStat = savedStats.find(s => s.legIndex === legIdx);
         const legResult = existingLegStat ? existingLegStat.result : 'win';
 
         let playerRows = '';
-        for (let i = 0; i < leg.count; i++) {
-          const pid = assignedPids[i] || '';
-          const user = allUsers.find(u => String(u.userId) === String(pid));
-          const pStat = savedStats.find(s => s.legIndex === legIdx && String(s.userId) === String(pid));
-          const statVal = pStat ? pStat.statValue : '';
+        if (assignedPids.length === 0) {
+          playerRows = '<p class="text-[11px] text-slate-500 py-1">此 Leg 隊長尚未指派隊員</p>';
+        } else {
+          assignedPids.forEach((pid, slotIdx) => {
+            const user = allUsers.find(u => String(u.userId) === String(pid));
+            const pStat = savedStats.find(s => s.legIndex === legIdx && String(s.userId) === String(pid));
+            const statVal = pStat ? pStat.statValue : '';
+            const statType = pStat ? pStat.statType : defaultStatType;
 
-          playerRows += `
-            <div class="flex items-center gap-2 mt-2 bg-slate-900 p-2 rounded-xl border border-slate-800">
-              <span class="text-white font-bold w-28 truncate text-[11px]">${user ? user.name : `選手 ${i + 1} (未排)`}</span>
-              <input type="hidden" class="stat-player-id" data-leg="${legIdx}" data-slot="${i}" value="${pid}">
-              
-              <select class="stat-type-select bg-slate-800 text-[10px] text-slate-300 p-1.5 rounded-lg border border-slate-700" data-leg="${legIdx}" data-slot="${i}">
-                <option value="ppd" ${defaultStatType === 'ppd' ? 'selected' : ''}>PPD (01賽制)</option>
-                <option value="mpr" ${defaultStatType === 'mpr' ? 'selected' : ''}>MPR (Cricket)</option>
-              </select>
+            playerRows += `
+              <div class="flex items-center gap-2 mt-2 bg-slate-900 p-2.5 rounded-xl border border-slate-800">
+                <span class="text-white font-bold w-28 truncate text-xs flex items-center gap-1">
+                  <span>👤</span> ${user ? user.name : '未知隊員'}
+                </span>
+                <input type="hidden" class="stat-player-id" data-leg="${legIdx}" data-slot="${slotIdx}" value="${pid}">
+                
+                <select class="stat-type-select bg-slate-800 text-[10px] text-slate-300 p-1.5 rounded-lg border border-slate-700" data-leg="${legIdx}" data-slot="${slotIdx}">
+                  <option value="ppd" ${statType === 'ppd' ? 'selected' : ''}>PPD (01)</option>
+                  <option value="mpr" ${statType === 'mpr' ? 'selected' : ''}>MPR (Cricket)</option>
+                </select>
 
-              <input type="number" step="0.01" placeholder="數值 (例: ${isCricket ? '3.25' : '82.5'})" 
-                class="stat-val-input flex-1 p-1.5 rounded-lg bg-slate-950 border border-slate-700 text-yellow-300 font-mono text-xs focus:outline-none focus:border-emerald-400" 
-                data-leg="${legIdx}" data-slot="${i}" value="${statVal}">
-            </div>
-          `;
+                <input type="number" step="0.01" placeholder="數值 (例: ${isCricket ? '3.25' : '82.5'})" 
+                  class="stat-val-input flex-1 p-1.5 rounded-lg bg-slate-950 border border-slate-700 text-yellow-300 font-mono text-xs focus:outline-none focus:border-emerald-400 font-bold" 
+                  data-leg="${legIdx}" data-slot="${slotIdx}" value="${statVal}">
+              </div>
+            `;
+          });
         }
 
         return `
-          <div class="bg-slate-950 p-3 rounded-2xl border border-slate-800 space-y-2">
+          <div class="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 space-y-2">
             <div class="flex justify-between items-center">
               <span class="font-black text-yellow-400 text-xs">${leg.name}</span>
               <div class="flex items-center gap-1">
-                <label class="text-[10px] text-slate-400 mr-1">此局賽果:</label>
-                <select class="leg-result-select bg-slate-800 text-[11px] font-bold p-1 rounded-lg border border-slate-700 ${legResult === 'win' ? 'text-emerald-400' : 'text-rose-400'}" data-leg="${legIdx}" onchange="this.className='leg-result-select bg-slate-800 text-[11px] font-bold p-1 rounded-lg border border-slate-700 ' + (this.value==='win'?'text-emerald-400':'text-rose-400')">
+                <label class="text-[10px] text-slate-400 mr-1 font-bold">局果:</label>
+                <select class="leg-result-select bg-slate-800 text-[11px] font-black p-1.5 rounded-lg border border-slate-700 ${legResult === 'win' ? 'text-emerald-400' : 'text-rose-400'}" data-leg="${legIdx}" onchange="this.className='leg-result-select bg-slate-800 text-[11px] font-black p-1.5 rounded-lg border border-slate-700 ' + (this.value==='win'?'text-emerald-400':'text-rose-400')">
                   <option value="win" ${legResult === 'win' ? 'selected' : ''}>勝 (WIN)</option>
                   <option value="loss" ${legResult === 'loss' ? 'selected' : ''}>負 (LOSE)</option>
                 </select>
               </div>
             </div>
-            ${playerRows || '<p class="text-[10px] text-slate-500">隊長尚未指派排陣隊員，請先排陣。</p>'}
+            ${playerRows}
           </div>
         `;
       }).join('');
@@ -1195,14 +1219,12 @@
         legsData: legsPayload
       });
 
-      alert(res.message || '賽事成績與個人數據已更新！');
+      alert(res.message || '賽事成績與個人數據已更新！Rating 已自動重算。');
       closeModal('statsInputModal');
       await loadMatches();
     }
 
-    /* ----------------------------------------------------
-       統計與隊員榜
-    ---------------------------------------------------- */
+    /* 戰力榜載入 */
     async function loadStats() {
       const tbody = document.getElementById('statsTableBody');
       const res = await apiRequest('GET', { action: 'getStats' });
@@ -1211,6 +1233,7 @@
         <tr class="hover:bg-slate-800/40 transition">
           <td class="p-3 font-bold text-white">${s.name}</td>
           <td class="p-3 font-mono text-yellow-400 font-bold">${s.rating}</td>
+          <td class="p-3 text-[11px] text-slate-300 font-mono">${s.avgPpd || '-'}/${s.avgMpr || '-'}</td>
           <td class="p-3 text-emerald-400 font-bold">${s.attendedCount} 場</td>
           <td class="p-3 text-cyan-400 font-black">${s.winRate}% (${s.legsWon}/${s.legsPlayed})</td>
         </tr>
