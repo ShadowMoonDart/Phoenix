@@ -64,9 +64,12 @@
           <h2 class="text-[11px] font-bold uppercase tracking-wider text-slate-400">隊伍名稱</h2>
           <p id="currentTeamBadge" class="text-sm font-black text-white">影月 Shadow Moon</p>
         </div>
-        <button onclick="loadMatches()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-3 py-1.5 rounded-lg border border-slate-700 shadow transition cursor-pointer flex items-center gap-1.5">
-          <span>🔄</span> 重新整理
-        </button>
+        <div class="flex items-center gap-2">
+          <span id="syncStatusBadge" class="hidden text-[10px] text-amber-400 font-bold animate-pulse">同步中...</span>
+          <button onclick="forceRefreshAll()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-3 py-1.5 rounded-lg border border-slate-700 shadow transition cursor-pointer flex items-center gap-1.5">
+            <span>🔄</span> 重新整理
+          </button>
+        </div>
       </div>
 
       <!-- 分類與季度篩選列 -->
@@ -100,16 +103,21 @@
 
     <!-- 2. 出席率與戰力統計分頁 -->
     <section id="tab-stats" class="hidden space-y-4">
-      <div class="flex justify-between items-center">
+      <div class="flex justify-between items-center gap-2">
         <div>
           <h2 class="text-sm font-bold text-slate-200 flex items-center gap-2">
             <span>🏆</span> 隊員戰力榜 & AI 能力評估
           </h2>
           <p class="text-[10px] text-slate-400 mt-0.5">點擊隊員即可展開「能力 6 角圖」與專屬戰術報告</p>
         </div>
-        <span class="text-[10px] bg-yellow-950 text-yellow-300 border border-yellow-800 px-2 py-0.5 rounded-full font-bold">
-          Carlsberg POL27 聯賽標準
-        </span>
+        <div class="flex items-center gap-1.5 shrink-0">
+          <button onclick="loadStats(true)" class="text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-2.5 py-1 rounded-lg border border-slate-700 cursor-pointer">
+            🔄 更新
+          </button>
+          <span class="text-[10px] bg-yellow-950 text-yellow-300 border border-yellow-800 px-2 py-0.5 rounded-full font-bold">
+            POL27
+          </span>
+        </div>
       </div>
 
       <div class="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow-xl">
@@ -260,6 +268,7 @@
             <span id="mdSeason" class="text-[10px] bg-yellow-950 text-yellow-300 border border-yellow-800/60 px-2 py-0.5 rounded-full font-bold"></span>
             <span id="mdRound" class="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full font-bold"></span>
             <span id="mdHomeAway" class="text-[10px] px-2 py-0.5 rounded-full font-bold"></span>
+            <span id="mdSyncIndicator" class="hidden text-[10px] text-amber-400 font-bold animate-pulse">更新中...</span>
           </div>
           <h3 id="mdTitle" class="text-base font-black text-white"></h3>
           <p id="mdMeta" class="text-[11px] text-slate-400 mt-0.5"></p>
@@ -301,12 +310,59 @@
 
         <!-- Tab 2: 排陣 -->
         <div id="md-tab-lineup" class="hidden space-y-3">
-          <div class="flex justify-between items-center">
+          <div class="flex flex-wrap justify-between items-center gap-2">
             <span class="text-xs text-slate-400">共 <b id="mdLegCount" class="text-white">0</b> 個 Leg</span>
-            <button id="btnSaveLineup" onclick="saveMatchLineup()" class="hidden bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-black px-3 py-1.5 rounded-xl text-xs cursor-pointer shadow">
-              💾 儲存隊長排陣
-            </button>
+            <div class="flex items-center gap-2">
+              <button id="btnAiLineup" onclick="runAiLineup()" class="hidden bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-black px-3 py-1.5 rounded-xl text-xs cursor-pointer shadow flex items-center gap-1 transition active:scale-95">
+                <span>🤖</span> 一鍵 AI 建議排陣
+              </button>
+              <button id="btnSaveLineup" onclick="saveMatchLineup()" class="hidden bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black px-3 py-1.5 rounded-xl text-xs cursor-pointer shadow transition active:scale-95">
+                💾 儲存隊長排陣
+              </button>
+            </div>
           </div>
+
+          <!-- AI 排陣評分與利弊分析面板 -->
+          <div id="aiLineupAnalysisBox" class="hidden bg-gradient-to-br from-indigo-950/80 via-slate-900 to-purple-950/70 border border-indigo-500/50 rounded-2xl p-3.5 space-y-3 shadow-lg">
+            <div class="flex justify-between items-center border-b border-indigo-500/30 pb-2">
+              <div class="flex items-center gap-2">
+                <span class="text-base">🧠</span>
+                <div>
+                  <h4 class="text-xs font-black text-indigo-200">AI 戰術排陣評估報告</h4>
+                  <p class="text-[10px] text-slate-400">已自動填入下方出賽名單，隊長可按需要微調後儲存</p>
+                </div>
+              </div>
+              <div class="text-right">
+                <div class="flex items-baseline justify-end gap-1">
+                  <span id="aiLineupScoreNum" class="text-xl font-black text-yellow-400 font-mono">0</span>
+                  <span class="text-[10px] text-slate-400">/ 100</span>
+                </div>
+                <span id="aiLineupGradeBadge" class="text-[10px] px-2 py-0.5 rounded-full font-black bg-indigo-900 text-indigo-200 border border-indigo-600">評估中</span>
+              </div>
+            </div>
+
+            <!-- 三維指標條 -->
+            <div id="aiLineupSubScores" class="grid grid-cols-3 gap-2 text-center"></div>
+
+            <!-- 建議原因 -->
+            <div class="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800 space-y-1">
+              <div class="text-[11px] font-bold text-indigo-300">📌 AI 排陣理由與思路：</div>
+              <ul id="aiLineupReasons" class="text-[11px] text-slate-300 space-y-1 list-disc list-inside leading-relaxed"></ul>
+            </div>
+
+            <!-- 利弊分析 -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div class="bg-emerald-950/40 p-2.5 rounded-xl border border-emerald-800/60 space-y-1">
+                <div class="text-[11px] font-bold text-emerald-300">✅ 陣容優勢 (利)</div>
+                <ul id="aiLineupPros" class="text-[11px] text-emerald-100/90 space-y-1 list-disc list-inside leading-relaxed"></ul>
+              </div>
+              <div class="bg-amber-950/40 p-2.5 rounded-xl border border-amber-800/60 space-y-1">
+                <div class="text-[11px] font-bold text-amber-300">⚠️ 潛在風險與注意 (弊)</div>
+                <ul id="aiLineupCons" class="text-[11px] text-amber-100/90 space-y-1 list-disc list-inside leading-relaxed"></ul>
+              </div>
+            </div>
+          </div>
+
           <div id="mdLineupContainer" class="space-y-2.5"></div>
         </div>
 
@@ -361,6 +417,7 @@
 
   <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbyqU3xJzzh9HpIwb1zXBDWmvNkzzsmaPYrJYx6fv0ezms8YUJU966obQjkkGV3nBwRctg/exec";
+    const BOOTSTRAP_CACHE_KEY = 'dart_cache_bootstrap_v1';
 
     let currentUser = null;
     try {
@@ -377,15 +434,19 @@
     let globalLegFormat = [];
     let currentStatusFilter = 'all';
     let currentSeasonFilter = 'ALL';
+    let lastBootstrapSync = 0;
 
-    // 目前開啟中的賽事詳情暫存
+    // 賽事詳情暫存與記憶快取
     let activeMatchId = null;
     let activeMatchDetails = null;
+    let matchDetailsCache = {};
+    let isLineupDirty = false;
 
-    window.addEventListener('DOMContentLoaded', async () => {
+    window.addEventListener('DOMContentLoaded', () => {
       checkAuthState();
-      await loadSettings();
-      await loadMatches();
+      // 1. 立即從本地快取渲染（0 毫秒開屏），再背景同步最新數據
+      const hasCache = hydrateFromLocalCache();
+      refreshBootstrapData(!hasCache);
     });
 
     function escapeHtml(str) {
@@ -413,6 +474,83 @@
       } catch (err) {
         return { success: false, error: err.toString() };
       }
+    }
+
+    /* ========================================================
+       【高速載入：單一 Bootstrap 請求 + 本地快取 SWR】
+       ======================================================== */
+    function hydrateFromLocalCache() {
+      try {
+        const raw = localStorage.getItem(BOOTSTRAP_CACHE_KEY);
+        if (!raw) return false;
+        const cached = JSON.parse(raw);
+        if (!cached || !cached.matches) return false;
+
+        applyBootstrapPayload(cached);
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    function applyBootstrapPayload(data) {
+      if (data.settings) {
+        if (data.settings.teamName) {
+          document.getElementById('currentTeamBadge').innerText = data.settings.teamName;
+        }
+        try {
+          const parsedSeasons = JSON.parse(data.settings.seasons);
+          if (Array.isArray(parsedSeasons) && parsedSeasons.length > 0) systemSeasons = parsedSeasons;
+        } catch (e) {}
+        try {
+          const parsedFormat = JSON.parse(data.settings.legFormat);
+          if (Array.isArray(parsedFormat)) globalLegFormat = parsedFormat;
+        } catch (e) {}
+        renderSeasonsUI();
+      }
+
+      if (Array.isArray(data.matches)) {
+        allMatchesData = data.matches;
+        renderMatchesList();
+      }
+
+      if (Array.isArray(data.stats)) {
+        allStatsData = data.stats;
+        renderStatsTable(allStatsData);
+      }
+    }
+
+    async function refreshBootstrapData(showLoading = false) {
+      const badge = document.getElementById('syncStatusBadge');
+      if (badge) badge.classList.remove('hidden');
+      if (showLoading) {
+        const container = document.getElementById('matchesContainer');
+        if (container) container.innerHTML = '<p class="text-xs text-slate-400 text-center py-6">載入賽事中...</p>';
+      }
+
+      const res = await apiRequest('GET', { action: 'getBootstrap' });
+      if (badge) badge.classList.add('hidden');
+
+      if (res && res.success) {
+        lastBootstrapSync = Date.now();
+        applyBootstrapPayload(res);
+        try {
+          localStorage.setItem(BOOTSTRAP_CACHE_KEY, JSON.stringify({
+            settings: res.settings,
+            matches: res.matches,
+            stats: res.stats,
+            savedAt: Date.now()
+          }));
+        } catch (e) {}
+      } else if (showLoading) {
+        // 後備方案：如果未部署新版 getBootstrap，自動降級使用舊 API 並行載入
+        await Promise.all([loadSettings(), loadMatches(), loadStats(false)]);
+      }
+    }
+
+    async function forceRefreshAll() {
+      matchDetailsCache = {};
+      await refreshBootstrapData(allMatchesData.length === 0);
     }
 
     function checkAuthState() {
@@ -457,7 +595,15 @@
         targetBtn.classList.add('border-rose-500', 'text-rose-400');
         targetBtn.classList.remove('border-transparent', 'text-slate-400');
       }
-      if (tabId === 'stats') loadStats();
+
+      if (tabId === 'stats') {
+        if (allStatsData.length > 0) {
+          renderStatsTable(allStatsData);
+          if (Date.now() - lastBootstrapSync > 60000) refreshBootstrapData(false);
+        } else {
+          loadStats(true);
+        }
+      }
       if (tabId === 'admin') loadAdminData();
     }
 
@@ -472,15 +618,11 @@
         }
         try {
           const parsedSeasons = JSON.parse(res.settings.seasons);
-          if (Array.isArray(parsedSeasons) && parsedSeasons.length > 0) {
-            systemSeasons = parsedSeasons;
-          }
+          if (Array.isArray(parsedSeasons) && parsedSeasons.length > 0) systemSeasons = parsedSeasons;
         } catch (e) {}
         try {
           const parsedFormat = JSON.parse(res.settings.legFormat);
-          if (Array.isArray(parsedFormat)) {
-            globalLegFormat = parsedFormat;
-          }
+          if (Array.isArray(parsedFormat)) globalLegFormat = parsedFormat;
         } catch (e) {}
       }
       renderSeasonsUI();
@@ -521,11 +663,15 @@
        【賽事列表與分類篩選】
        ======================================================== */
     async function loadMatches() {
-      const container = document.getElementById('matchesContainer');
-      if (container) container.innerHTML = '<p class="text-xs text-slate-400 text-center py-6">載入賽事中...</p>';
+      if (allMatchesData.length === 0) {
+        const container = document.getElementById('matchesContainer');
+        if (container) container.innerHTML = '<p class="text-xs text-slate-400 text-center py-6">載入賽事中...</p>';
+      }
       const res = await apiRequest('GET', { action: 'getMatches' });
-      allMatchesData = (res && res.success) ? res.matches : [];
-      renderMatchesList();
+      if (res && res.success) {
+        allMatchesData = res.matches;
+        renderMatchesList();
+      }
     }
 
     function changeFilter() {
@@ -612,8 +758,9 @@
     /* ========================================================
        【賽事詳情彈窗：簽到、排陣、賽果數據】
        ======================================================== */
-    async function openMatchModal(matchId) {
+    async function openMatchModal(matchId, forceFetch = false) {
       activeMatchId = matchId;
+      isLineupDirty = false;
       const match = allMatchesData.find(m => String(m.id) === String(matchId));
       if (!match) return;
 
@@ -627,18 +774,36 @@
 
       document.getElementById('mdTitle').innerText = `VS ${match.opponent}`;
       document.getElementById('mdMeta').innerText = `🕒 ${match.date} ｜ 📍 ${match.venue}`;
-
-      document.getElementById('mdAttendanceList').innerHTML = '<p class="text-xs text-slate-400 text-center py-4">載入隊員與排陣資料中...</p>';
+      document.getElementById('aiLineupAnalysisBox').classList.add('hidden');
       document.getElementById('matchDetailModal').classList.remove('hidden');
       switchMatchModalTab('checkin');
 
+      const cachedDetails = matchDetailsCache[matchId];
+      const syncInd = document.getElementById('mdSyncIndicator');
+
+      if (cachedDetails && !forceFetch) {
+        activeMatchDetails = cachedDetails;
+        renderMatchDetailsModal();
+        if (syncInd) syncInd.classList.remove('hidden');
+      } else {
+        document.getElementById('mdAttendanceList').innerHTML = '<p class="text-xs text-slate-400 text-center py-4">載入隊員與排陣資料中...</p>';
+      }
+
       const res = await apiRequest('GET', { action: 'getMatchDetails', matchId });
+      if (syncInd) syncInd.classList.add('hidden');
+
       if (!res || !res.success) {
-        alert(res?.message || '載入賽事詳情失敗');
+        if (!cachedDetails) alert(res?.message || '載入賽事詳情失敗');
         return;
       }
-      activeMatchDetails = res;
-      renderMatchDetailsModal();
+
+      matchDetailsCache[matchId] = res;
+      if (String(activeMatchId) === String(matchId)) {
+        activeMatchDetails = res;
+        if (!isLineupDirty) {
+          renderMatchDetailsModal();
+        }
+      }
     }
 
     function switchMatchModalTab(tab) {
@@ -699,9 +864,9 @@
 
       // 2. 出賽排陣
       document.getElementById('mdLegCount').innerText = legFormat.length;
+      document.getElementById('btnAiLineup').classList.toggle('hidden', !isAdmin);
       document.getElementById('btnSaveLineup').classList.toggle('hidden', !isAdmin);
 
-      // 排序：已簽到出席/遲到的隊員排在最前，方便隊長排陣
       const attMap = {};
       attendanceList.forEach(a => { attMap[String(a.userId)] = a.status; });
       const sortedUsers = [...allActiveUsers].sort((a, b) => {
@@ -723,7 +888,7 @@
               return `<option value="${u.userId}" ${curUid === String(u.userId) ? 'selected' : ''}>${tag} ${escapeHtml(u.name)} (Rt.${parseFloat(u.rating || 0).toFixed(1)})</option>`;
             }).join('');
             return `
-              <select data-leg="${legIdx}" data-slot="${slotIdx}" class="lineup-select w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-2 text-xs text-slate-200 focus:border-amber-400 focus:outline-none">
+              <select onchange="isLineupDirty = true" data-leg="${legIdx}" data-slot="${slotIdx}" class="lineup-select w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-2 text-xs text-slate-200 focus:border-amber-400 focus:outline-none">
                 <option value="">-- 未指派第 ${slotIdx + 1} 位 --</option>
                 ${opts}
               </select>
@@ -821,6 +986,345 @@
       }).join('');
     }
 
+    /* ========================================================
+       【一鍵 AI 建議排陣核心引擎 & 利弊評分報告】
+       ======================================================== */
+    function runAiLineup() {
+      if (!activeMatchDetails) return;
+      const { attendanceList = [], allActiveUsers = [], legFormat = [] } = activeMatchDetails;
+      if (allActiveUsers.length === 0 || legFormat.length === 0) {
+        return alert('目前沒有足夠的隊員或賽制資料可供 AI 運算');
+      }
+
+      isLineupDirty = true;
+
+      // 建立出席狀態對照表
+      const attMap = {};
+      attendanceList.forEach(a => { attMap[String(a.userId)] = a.status; });
+
+      // 整合戰力榜的 6 角雷達與手感數據
+      const statMap = {};
+      (allStatsData || []).forEach(s => { statMap[String(s.id)] = s; });
+
+      const players = allActiveUsers.map(u => {
+        const uid = String(u.userId);
+        const st = statMap[uid] || {};
+        const rt = parseFloat(u.rating || st.rating) || 1;
+        const avgPpd = parseFloat(u.avgPpd || st.avgPpd) || 0;
+        const avgMpr = parseFloat(u.avgMpr || st.avgMpr) || 0;
+        const status = attMap[uid] || 'unmarked'; // attending | late | absent | unmarked
+
+        // 01 / Cricket / 抗壓 / 狀態標準化分數 (0~100)
+        const dim01 = st.radar?.dim01 ?? (avgPpd > 0 ? Math.min(100, Math.max(30, Math.round(((avgPpd - 12) / 26) * 70 + 30))) : Math.min(88, Math.round(rt * 3.5)));
+        const dimCricket = st.radar?.dimCricket ?? (avgMpr > 0 ? Math.min(100, Math.max(30, Math.round(((avgMpr - 1.2) / 3.0) * 70 + 30))) : Math.min(88, Math.round(rt * 3.5)));
+        const dimClutch = st.radar?.dimClutch ?? Math.min(95, Math.max(40, Math.round(rt * 3.2 + 15)));
+        const dimForm = st.radar?.dimForm ?? 50;
+        const ratingNorm = Math.min(100, Math.max(20, Math.round((rt / 26) * 100)));
+
+        return {
+          uid,
+          name: u.name,
+          rating: rt,
+          avgPpd,
+          avgMpr,
+          status,
+          dim01,
+          dimCricket,
+          dimClutch,
+          dimForm,
+          ratingNorm,
+          winRate: st.winRate ?? 0,
+          recentFormRate: st.recentFormRate ?? -1,
+          aiRole: st.aiRole || ''
+        };
+      });
+
+      const attendingPlayers = players.filter(p => p.status === 'attending');
+      const latePlayers = players.filter(p => p.status === 'late');
+      const unmarkedPlayers = players.filter(p => p.status === 'unmarked');
+
+      // 可出賽池（嚴格排除「缺席」，僅在極端情況才不會選到）
+      const availablePool = [...attendingPlayers, ...latePlayers, ...unmarkedPlayers];
+      if (availablePool.length === 0) {
+        return alert('目前所有隊員皆標記為「❌ 缺席」，無法進行 AI 排陣！');
+      }
+
+      // 分析每個 Leg 的賽制權重與戰略優先級
+      const legMeta = legFormat.map((leg, idx) => {
+        const sets = leg.sets || [];
+        const ppdSets = sets.filter(s => (s.type || 'ppd') === 'ppd').length;
+        const mprSets = sets.filter(s => s.type === 'mpr').length;
+        const gameText = sets.map(s => `${s.game} ${s.rule}`).join(' ') + ' ' + leg.name;
+        const isDidoOrMo = /DIDO|Double|MO|Master/i.test(gameText);
+        const count = leg.count || 1;
+
+        // 策略優先序：1人單打BO3 > 1人DIDO/單局 > 2人雙打BO3 > 2人單局 > 3人/4人隊際
+        let priority = 50;
+        if (count === 1 && leg.isBo3) priority = 100 - idx;
+        else if (count === 1) priority = 85 - idx;
+        else if (count === 2 && leg.isBo3) priority = 70 - idx;
+        else if (count === 2) priority = 55 - idx;
+        else priority = 30 - idx;
+
+        let focus = 'balanced';
+        if (mprSets > ppdSets) focus = 'cricket';
+        else if (ppdSets > mprSets && mprSets === 0) focus = '01';
+        else if (leg.isBo3) focus = 'bo3';
+
+        return { leg, idx, count, ppdSets, mprSets, isDidoOrMo, focus, priority };
+      });
+
+      const orderedLegs = [...legMeta].sort((a, b) => b.priority - a.priority);
+      const appearances = {};
+      players.forEach(p => { appearances[p.uid] = 0; });
+
+      const suggestedLineup = Array.from({ length: legFormat.length }, () => []);
+      const legFitScores = [];
+
+      // 逐 Leg 進行最優化指派
+      orderedLegs.forEach(meta => {
+        const { idx, count, isDidoOrMo, focus } = meta;
+        const pickedInThisLeg = new Set();
+
+        for (let slot = 0; slot < count; slot++) {
+          let bestPlayer = null;
+          let bestScore = -Infinity;
+          let bestBaseSkill = 0;
+
+          availablePool.forEach(p => {
+            if (pickedInThisLeg.has(p.uid)) return;
+
+            // 1. 技戰術適配基礎分 (0~100)
+            let skillScore = 0;
+            if (focus === '01') {
+              skillScore = 0.45 * p.dim01 + 0.25 * p.ratingNorm + (isDidoOrMo ? 0.20 * p.dimClutch : 0.15 * p.dimClutch) + 0.15 * p.dimForm;
+            } else if (focus === 'cricket') {
+              skillScore = 0.52 * p.dimCricket + 0.23 * p.ratingNorm + 0.15 * p.dimForm + 0.10 * p.dimClutch;
+            } else if (focus === 'bo3') {
+              skillScore = 0.30 * p.dim01 + 0.30 * p.dimCricket + 0.20 * p.ratingNorm + 0.12 * p.dimClutch + 0.08 * p.dimForm;
+            } else {
+              skillScore = 0.38 * p.dim01 + 0.22 * p.dimCricket + 0.25 * p.ratingNorm + 0.15 * p.dimForm;
+            }
+
+            // 2. 出席時間與風險修正
+            let attBonus = 0;
+            if (p.status === 'attending') {
+              attBonus = 28;
+            } else if (p.status === 'late') {
+              // 遲到隊員：前 3 局扣分較重（避免未到場），後段 Leg 6+ 扣分極輕
+              attBonus = idx <= 2 ? -35 : (idx <= 5 ? -10 : 6);
+            } else if (p.status === 'unmarked') {
+              attBonus = -45;
+            }
+
+            // 3. 出賽次數輪換與體能負荷平衡
+            const fatiguePenalty = appearances[p.uid] * (count === 1 ? 17 : 13);
+
+            // 4. 單打局加權（單打無隊友兜底，強化高分/高抗壓選手優勢）
+            const singlesBoost = count === 1 ? (skillScore * 0.15) : 0;
+
+            const totalUtility = skillScore + attBonus + singlesBoost - fatiguePenalty;
+            if (totalUtility > bestScore) {
+              bestScore = totalUtility;
+              bestPlayer = p;
+              bestBaseSkill = skillScore;
+            }
+          });
+
+          if (bestPlayer) {
+            pickedInThisLeg.add(bestPlayer.uid);
+            suggestedLineup[idx][slot] = bestPlayer.uid;
+            appearances[bestPlayer.uid] += 1;
+            legFitScores.push({
+              legIdx: idx,
+              player: bestPlayer,
+              skillScore: Math.round(bestBaseSkill)
+            });
+          } else {
+            suggestedLineup[idx][slot] = '';
+          }
+        }
+      });
+
+      // 將 AI 排陣結果寫入畫面上的下拉選單
+      document.querySelectorAll('.lineup-select').forEach(sel => {
+        const legIdx = parseInt(sel.dataset.leg, 10);
+        const slotIdx = parseInt(sel.dataset.slot, 10);
+        const val = suggestedLineup[legIdx]?.[slotIdx] || '';
+        sel.value = val;
+        sel.classList.add('ring-1', 'ring-indigo-500/70');
+        setTimeout(() => sel.classList.remove('ring-1', 'ring-indigo-500/70'), 1800);
+      });
+
+      // 計算排陣三維評分與綜合分數
+      const totalSlots = legFormat.reduce((sum, l) => sum + (l.count || 1), 0);
+      const filledEntries = legFitScores;
+      const avgSkillFit = filledEntries.length > 0
+        ? Math.round(filledEntries.reduce((s, e) => s + e.skillScore, 0) / filledEntries.length)
+        : 0;
+
+      // 出席保障度 (attending=100%, late=70%, unmarked=35%, empty=0%)
+      let attPoints = 0;
+      filledEntries.forEach(e => {
+        if (e.player.status === 'attending') attPoints += 100;
+        else if (e.player.status === 'late') attPoints += 70;
+        else attPoints += 35;
+      });
+      const attendanceScore = totalSlots > 0 ? Math.round(attPoints / totalSlots) : 0;
+
+      // 輪換均衡度
+      const attendingPlayedCount = attendingPlayers.filter(p => appearances[p.uid] > 0).length;
+      const attendingCoverage = attendingPlayers.length > 0 ? (attendingPlayedCount / attendingPlayers.length) : 1;
+      const maxLoad = Math.max(0, ...Object.values(appearances));
+      const overloadPenalty = Math.max(0, (maxLoad - 4) * 8);
+      const balanceScore = Math.min(100, Math.max(30, Math.round(attendingCoverage * 88 + 12 - overloadPenalty)));
+
+      const overallScore = Math.min(99, Math.max(25, Math.round(avgSkillFit * 0.42 + attendanceScore * 0.33 + balanceScore * 0.25)));
+
+      let gradeText = 'C 級・應急陣容';
+      let gradeCls = 'bg-rose-900 text-rose-200 border-rose-600';
+      if (overallScore >= 88) {
+        gradeText = 'S 級・黃金陣容';
+        gradeCls = 'bg-amber-500 text-slate-950 border-yellow-300';
+      } else if (overallScore >= 76) {
+        gradeText = 'A 級・強勢陣容';
+        gradeCls = 'bg-emerald-700 text-emerald-100 border-emerald-500';
+      } else if (overallScore >= 62) {
+        gradeText = 'B 級・穩健陣容';
+        gradeCls = 'bg-indigo-800 text-indigo-100 border-indigo-500';
+      }
+
+      // 生成「排陣理由」、「優勢 (利)」、「風險與注意 (弊)」
+      const reasons = [];
+      const pros = [];
+      const cons = [];
+
+      const findNames = legIdx => (suggestedLineup[legIdx] || [])
+        .map(uid => players.find(p => p.uid === uid)?.name)
+        .filter(Boolean);
+
+      // 理由 1：單打核心
+      const singleLegs = legMeta.filter(m => m.count === 1);
+      if (singleLegs.length > 0) {
+        const leg1Names = findNames(singleLegs[0].idx);
+        const leg1P = players.find(p => p.uid === suggestedLineup[singleLegs[0].idx]?.[0]);
+        if (leg1P) {
+          reasons.push(`<b>${escapeHtml(singleLegs[0].leg.name)}</b> 派上 <b>${escapeHtml(leg1P.name)}</b>（POL27 Rt.${leg1P.rating.toFixed(1)}），搶佔開局領先士氣與 BO3 全能優勢。`);
+        }
+      }
+
+      // 理由 2：01 與 Cricket 專才匹配
+      const cricketLeg = legMeta.find(m => m.focus === 'cricket');
+      if (cricketLeg) {
+        const cNames = findNames(cricketLeg.idx);
+        if (cNames.length > 0) {
+          reasons.push(`<b>${escapeHtml(cricketLeg.leg.name)}</b> 優先鎖定 MPR 控靶能力較佳的 <b>${cNames.map(escapeHtml).join('、')}</b> 出戰。`);
+        }
+      }
+      const didoLeg = legMeta.find(m => m.isDidoOrMo && m.count === 1 && m.idx !== singleLegs[0]?.idx);
+      if (didoLeg) {
+        const dNames = findNames(didoLeg.idx);
+        if (dNames.length > 0) {
+          reasons.push(`<b>${escapeHtml(didoLeg.leg.name)}</b> 著重結鏢抗壓與 01 爆發力，委派 <b>${dNames.map(escapeHtml).join('、')}</b> 擔綱。`);
+        }
+      }
+
+      // 理由 3：輪換與遲到安排
+      const lateUsed = latePlayers.filter(p => appearances[p.uid] > 0);
+      if (lateUsed.length > 0) {
+        const lateLegsDesc = lateUsed.map(p => {
+          const legs = suggestedLineup.map((arr, i) => arr.includes(p.uid) ? `Leg ${i + 1}` : null).filter(Boolean);
+          return `${escapeHtml(p.name)}(${legs.join('/')})`;
+        }).join('、');
+        reasons.push(`將「⏰ 遲到」隊員 ${lateLegsDesc} 集中安排於中後段局數，確保趕得及熱身出賽。`);
+      } else {
+        reasons.push(`全部 ${totalSlots} 個出賽席位均已按「出席優先 + 體能輪換」分配，避免主力過度疲勞。`);
+      }
+
+      // 優勢 (Pros)
+      const attSlotsCount = filledEntries.filter(e => e.player.status === 'attending').length;
+      if (attSlotsCount === totalSlots && totalSlots > 0) {
+        pros.push(`<b>100% 出席保障</b>：所有出賽席位皆由「✅ 已確認出席」隊員出戰，無臨場缺人風險。`);
+      } else if (attendanceScore >= 75) {
+        pros.push(`<b>出席穩定度高</b>（${attendanceScore}%）：絕大部分局數由已確認出席隊員坐鎮。`);
+      }
+
+      if (attendingPlayers.length > 0 && attendingPlayedCount === attendingPlayers.length) {
+        pros.push(`<b>全員皆有實戰機會</b>：已簽到出席的 ${attendingPlayers.length} 位隊員全部獲得出賽安排，有助維持團隊士氣。`);
+      }
+
+      const hotPlayers = filledEntries.filter(e => e.player.recentFormRate >= 70).map(e => e.player.name);
+      const uniqueHot = [...new Set(hotPlayers)];
+      if (uniqueHot.length > 0) {
+        pros.push(`<b>火熱手感加持</b>：近期勝率高企的 <b>${uniqueHot.map(escapeHtml).join('、')}</b> 已被編入主力戰線。`);
+      }
+
+      if (avgSkillFit >= 72) {
+        pros.push(`<b>專長高度契合</b>（適配分 ${avgSkillFit}）：01 與 Cricket 局各司其職，整體取分期望值高。`);
+      }
+      if (pros.length === 0) {
+        pros.push(`在現有人手條件下已最大化保留單打與雙打戰力，並兼顧輪換平衡。`);
+      }
+
+      // 劣勢 / 風險 (Cons)
+      const unmarkedUsed = unmarkedPlayers.filter(p => appearances[p.uid] > 0);
+      if (unmarkedUsed.length > 0) {
+        cons.push(`<b>包含未簽到隊員</b>：出席人數不足，系統補入了「未簽到」的 <b>${unmarkedUsed.map(p => escapeHtml(p.name)).join('、')}</b>，請隊長賽前私訊確認能否出席。`);
+      }
+      const emptySlotsCount = totalSlots - filledEntries.length;
+      if (emptySlotsCount > 0) {
+        cons.push(`<b>尚餘 ${emptySlotsCount} 個空缺席位</b>：可出賽人數少於多人賽所需名額（如 3/4 人賽），請催促隊員盡快簽到。`);
+      }
+      if (lateUsed.length > 0) {
+        const earlyLate = lateUsed.filter(p => suggestedLineup.slice(0, 3).some(arr => arr.includes(p.uid)));
+        if (earlyLate.length > 0) {
+          cons.push(`<b>早段遲到風險</b>：「⏰ 遲到」的 ${earlyLate.map(p => escapeHtml(p.name)).join('、')} 被排入前 3 局，開賽時務必留意到達時間。`);
+        } else {
+          cons.push(`<b>遲到調度變數</b>：有遲到隊員在中後段上陣，若賽事進度偏快需準備後備替補。`);
+        }
+      }
+      const overloaded = players.filter(p => appearances[p.uid] >= 5);
+      if (overloaded.length > 0) {
+        cons.push(`<b>體能負荷偏高</b>：<b>${overloaded.map(p => `${escapeHtml(p.name)}(${appearances[p.uid]}局)`).join('、')}</b> 出賽場次較多，需留意後段專注力下降。`);
+      }
+      const hasGenderSpecific = legFormat.some(l => /女單|男單|混合/.test(l.name + (l.category || '')));
+      if (hasGenderSpecific) {
+        cons.push(`<b>性別資格提醒</b>：系統未儲存隊員性別欄位，請隊長核對「男單 / 女單 / 混合雙打」人選是否符合聯賽規定。`);
+      }
+      if (cons.length === 0) {
+        cons.push(`暫無明顯結構性短板，建議賽前按當晚臨場練鏢手感作最後微調即可。`);
+      }
+
+      // 渲染 AI 報告面板
+      document.getElementById('aiLineupScoreNum').innerText = overallScore;
+      const gradeBadge = document.getElementById('aiLineupGradeBadge');
+      gradeBadge.innerText = gradeText;
+      gradeBadge.className = `text-[10px] px-2 py-0.5 rounded-full font-black border ${gradeCls}`;
+
+      document.getElementById('aiLineupSubScores').innerHTML = `
+        <div class="bg-slate-950/70 p-2 rounded-xl border border-slate-800">
+          <div class="text-[10px] text-slate-400">戰力適配</div>
+          <div class="text-xs font-black text-indigo-300 font-mono">${avgSkillFit} 分</div>
+        </div>
+        <div class="bg-slate-950/70 p-2 rounded-xl border border-slate-800">
+          <div class="text-[10px] text-slate-400">出席保障</div>
+          <div class="text-xs font-black text-emerald-300 font-mono">${attendanceScore} 分</div>
+        </div>
+        <div class="bg-slate-950/70 p-2 rounded-xl border border-slate-800">
+          <div class="text-[10px] text-slate-400">輪換均衡</div>
+          <div class="text-xs font-black text-amber-300 font-mono">${balanceScore} 分</div>
+        </div>
+      `;
+
+      document.getElementById('aiLineupReasons').innerHTML = reasons.map(r => `<li>${r}</li>`).join('');
+      document.getElementById('aiLineupPros').innerHTML = pros.map(p => `<li>${p}</li>`).join('');
+      document.getElementById('aiLineupCons').innerHTML = cons.map(c => `<li>${c}</li>`).join('');
+
+      const box = document.getElementById('aiLineupAnalysisBox');
+      box.classList.remove('hidden');
+      box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
     async function submitCheckIn(status) {
       if (!currentUser) {
         closeModal('matchDetailModal');
@@ -835,8 +1339,8 @@
         status: status
       });
       if (res && res.success) {
-        await openMatchModal(activeMatchId);
-        loadMatches();
+        await openMatchModal(activeMatchId, true);
+        refreshBootstrapData(false);
       } else {
         alert(res?.message || '簽到更新失敗');
       }
@@ -859,9 +1363,10 @@
         lineup: lineup
       });
       if (res && res.success) {
+        isLineupDirty = false;
         alert('✅ 排陣已成功儲存！');
-        await openMatchModal(activeMatchId);
-        loadMatches();
+        await openMatchModal(activeMatchId, true);
+        refreshBootstrapData(false);
       } else {
         alert(res?.message || '儲存排陣失敗');
       }
@@ -907,8 +1412,8 @@
       });
       if (res && res.success) {
         alert(res.message || '賽果與數據已更新！');
-        await openMatchModal(activeMatchId);
-        loadMatches();
+        await openMatchModal(activeMatchId, true);
+        refreshBootstrapData(false);
       } else {
         alert(res?.message || '儲存失敗');
       }
@@ -918,11 +1423,12 @@
       if (!confirm('確定要永久刪除此賽事嗎？')) return;
       const res = await apiRequest('POST', { action: 'deleteMatch', matchId: activeMatchId });
       if (res && res.success) {
+        delete matchDetailsCache[activeMatchId];
         alert('已刪除賽事');
         closeModal('matchDetailModal');
-        loadMatches();
+        refreshBootstrapData(false);
       } else {
-        alert(res?.message || res?.error || '刪除失敗（請檢查 GAS deleteMatch 的變數名）');
+        alert(res?.message || res?.error || '刪除失敗');
       }
     }
 
@@ -930,7 +1436,6 @@
        【隊長管理後台】
        ======================================================== */
     async function loadAdminData() {
-      await loadSettings();
       const pendingList = document.getElementById('pendingUsersList');
       pendingList.innerHTML = '<p class="text-slate-400">載入名單中...</p>';
       const res = await apiRequest('GET', { action: 'getUsers' });
@@ -961,6 +1466,7 @@
       if (res && res.success) {
         alert('已啟用該隊員帳號！');
         loadAdminData();
+        refreshBootstrapData(false);
       } else {
         alert('啟用失敗');
       }
@@ -976,6 +1482,7 @@
       if (res && res.success) {
         input.value = '';
         renderSeasonsUI();
+        refreshBootstrapData(false);
       } else {
         alert('新增季度失敗');
       }
@@ -985,7 +1492,10 @@
       if (!confirm(`確定刪除季度「${systemSeasons[idx]}」？`)) return;
       systemSeasons.splice(idx, 1);
       const res = await apiRequest('POST', { action: 'saveSeasons', seasons: systemSeasons });
-      if (res && res.success) renderSeasonsUI();
+      if (res && res.success) {
+        renderSeasonsUI();
+        refreshBootstrapData(false);
+      }
     }
 
     function togglePastMatchFields(checked) {
@@ -1017,7 +1527,7 @@
         document.getElementById('newScore').value = '';
         document.getElementById('newIsFinishedCheck').checked = false;
         togglePastMatchFields(false);
-        await loadMatches();
+        await refreshBootstrapData(false);
         switchTab('matches');
       } else {
         alert(res?.message || '建立賽程失敗');
@@ -1027,15 +1537,31 @@
     /* ========================================================
        【出席與戰力排行榜 & 6 角圖】
        ======================================================== */
-    async function loadStats() {
+    async function loadStats(force = false) {
+      if (!force && allStatsData.length > 0) {
+        renderStatsTable(allStatsData);
+        return;
+      }
       const tbody = document.getElementById('statsTableBody');
-      tbody.innerHTML = '<tr><td colspan="5" class="text-center p-6 text-slate-400">載入 POL27 數據中...</td></tr>';
+      if (allStatsData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center p-6 text-slate-400">載入 POL27 數據中...</td></tr>';
+      }
 
       const res = await apiRequest('GET', { action: 'getStats' });
-      if (!res.success || !res.stats) return;
+      if (!res || !res.success || !res.stats) return;
       allStatsData = res.stats;
+      renderStatsTable(allStatsData);
+    }
 
-      tbody.innerHTML = res.stats.map(s => {
+    function renderStatsTable(statsList) {
+      const tbody = document.getElementById('statsTableBody');
+      if (!tbody) return;
+      if (!statsList || statsList.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center p-6 text-slate-400">暫無戰力資料</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = statsList.map(s => {
         let formBadge = '<span class="text-slate-500 font-mono text-[10px]">-</span>';
         if (s.recentFormRate >= 70) {
           formBadge = `<span class="text-[10px] bg-rose-950 text-rose-300 border border-rose-800 px-1.5 py-0.5 rounded font-black">🔥 ${s.recentFormRate}%</span>`;
@@ -1191,7 +1717,7 @@
           currentUser = res.user;
           localStorage.setItem('dart_user', JSON.stringify(currentUser));
           checkAuthState();
-          loadMatches();
+          refreshBootstrapData(false);
         } else {
           alert(res.message || '登入失敗');
         }
