@@ -1,3 +1,21 @@
+已為你完整保留並升級返「賽事賽制設定」功能！
+
+後端 Code.gs 本身已經內置咗全局 saveLegFormat 同單場 CustomLegFormat 支援（如果你剛才已經部署咗上一個版本嘅
+Code.gs，後端無需再改），只需將下面嘅 完整版 index.html 覆蓋上去即可。
+
+✨ 保留並強化咗嘅賽制功能
+
+1.  「👑 隊長管理」→「⚙️ 賽季預設賽制設定」
+      - 可自由新增 / 刪除 / 上下調動局數 (Leg)。
+      - 可自訂每局名稱、出賽人數（1～4 人）、單盤或 BO3 三盤兩勝、每盤項目名稱（如 501 (MO)、Cricket、701
+        (DIDO)、Half-It、901、Gallon 1101）及計分制（PPD / MPR）。
+      - 支援一鍵儲存為全季預設，以及還原 POL27 官方 9 局預設。
+2.  單場賽事「📋 出賽排陣」→「⚙️ 修改本場賽制」
+      - 隊長打開任何一場比賽（例如友誼賽或特別盃賽），都可以單獨調整該場嘅 Leg
+        數量、人數及賽制並直接儲存（只影響該場，唔會影響其他賽程），改完後「出賽排陣」、「AI 排陣」同「賽果數據」會即時同步切換！
+
+完整版前端程式碼 (index.html)
+
 <!DOCTYPE html>
 <html lang="zh-HK">
 <head>
@@ -179,6 +197,38 @@
         </div>
       </div>
 
+      <!-- 賽事賽制規格設定 (全季預設範本) -->
+      <div class="bg-slate-900 p-4 rounded-2xl border border-indigo-500/40 space-y-3 shadow-xl">
+        <div class="flex justify-between items-center border-b border-slate-800 pb-2 gap-2">
+          <div>
+            <h3 class="text-xs font-black text-indigo-300 flex items-center gap-1.5">
+              <span>⚙️</span> 賽季預設賽制規格 (Leg Format)
+            </h3>
+            <p class="text-[10px] text-slate-400 mt-0.5">新增賽程時會自動套用此賽制（單場亦可獨立微調）</p>
+          </div>
+          <button type="button" onclick="toggleAdminFormatEditor()" id="btnToggleAdminFormat" class="shrink-0 bg-indigo-950 hover:bg-indigo-900 text-indigo-200 border border-indigo-700 px-3 py-1.5 rounded-xl text-xs font-bold cursor-pointer">
+            ✏️ 編輯賽制
+          </button>
+        </div>
+
+        <div id="adminFormatSummary" class="flex flex-wrap gap-1.5 text-[10px]"></div>
+
+        <div id="adminFormatEditorWrapper" class="hidden space-y-3 pt-1">
+          <div id="adminFormatEditorList" class="space-y-2.5"></div>
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" onclick="addFormatLeg('admin')" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold py-2 rounded-xl text-xs cursor-pointer">
+              ➕ 新增一局 (Leg)
+            </button>
+            <button type="button" onclick="resetAdminLegFormat()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-amber-300 font-bold py-2 rounded-xl text-xs cursor-pointer">
+              ↺ 還原官方 9 局
+            </button>
+          </div>
+          <button type="button" onclick="saveAdminLegFormat()" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold py-2.5 rounded-xl text-xs cursor-pointer shadow-lg">
+            💾 儲存為全季預設賽制
+          </button>
+        </div>
+      </div>
+
       <!-- 新增賽程 -->
       <div class="bg-slate-900 p-4 rounded-2xl border border-yellow-500/40 space-y-3.5 shadow-xl">
         <div class="flex justify-between items-center border-b border-slate-800 pb-2">
@@ -337,16 +387,43 @@
           </div>
         </div>
 
-        <!-- Tab 2: 排陣 -->
+        <!-- Tab 2: 排陣 & 本場賽制調整 -->
         <div id="md-tab-lineup" class="hidden space-y-3">
           <div class="flex flex-wrap justify-between items-center gap-2">
-            <span class="text-xs text-slate-400">共 <b id="mdLegCount" class="text-white">0</b> 個 Leg</span>
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-slate-400">共 <b id="mdLegCount" class="text-white">0</b> 個 Leg</span>
+              <button id="btnToggleMatchFormat" onclick="toggleMatchFormatEditor()" class="hidden bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-indigo-700/60 px-2.5 py-1 rounded-xl text-[11px] font-bold cursor-pointer">
+                ⚙️ 修改本場賽制
+              </button>
+            </div>
             <div class="flex items-center gap-2">
               <button id="btnAiLineup" onclick="runAiLineup()" class="hidden bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-black px-3 py-1.5 rounded-xl text-xs cursor-pointer shadow flex items-center gap-1 transition active:scale-95">
                 <span>🤖</span> 一鍵 AI 建議排陣
               </button>
               <button id="btnSaveLineup" onclick="saveMatchLineup()" class="hidden bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black px-3 py-1.5 rounded-xl text-xs cursor-pointer shadow transition active:scale-95">
                 💾 儲存隊長排陣
+              </button>
+            </div>
+          </div>
+
+          <!-- 單場自訂賽制編輯面板 -->
+          <div id="matchFormatEditorWrapper" class="hidden bg-slate-950/90 border border-indigo-500/50 rounded-2xl p-3 space-y-3 shadow-lg">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+              <div>
+                <h4 class="text-xs font-black text-indigo-300">⚙️ 調整此場比賽專屬賽制</h4>
+                <p class="text-[10px] text-slate-400">僅套用於此場比賽，不影響全季預設賽制</p>
+              </div>
+              <button type="button" onclick="loadDefaultToMatchFormat()" class="text-[10px] bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 px-2 py-1 rounded-lg font-bold cursor-pointer">
+                📋 載入預設賽制
+              </button>
+            </div>
+            <div id="matchFormatEditorList" class="space-y-2"></div>
+            <div class="flex gap-2">
+              <button type="button" onclick="addFormatLeg('match')" class="flex-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold py-2 rounded-xl text-xs cursor-pointer">
+                ➕ 新增一局 (Leg)
+              </button>
+              <button type="button" onclick="applyAndSaveMatchLegFormat()" class="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold py-2 rounded-xl text-xs cursor-pointer shadow">
+                ✅ 儲存並套用本場賽制
               </button>
             </div>
           </div>
@@ -370,16 +447,13 @@
               </div>
             </div>
 
-            <!-- 三維指標條 -->
             <div id="aiLineupSubScores" class="grid grid-cols-3 gap-2 text-center"></div>
 
-            <!-- 建議原因 -->
             <div class="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800 space-y-1">
               <div class="text-[11px] font-bold text-indigo-300">📌 AI 排陣理由與思路：</div>
               <ul id="aiLineupReasons" class="text-[11px] text-slate-300 space-y-1 list-disc list-inside leading-relaxed"></ul>
             </div>
 
-            <!-- 利弊分析 -->
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div class="bg-emerald-950/40 p-2.5 rounded-xl border border-emerald-800/60 space-y-1">
                 <div class="text-[11px] font-bold text-emerald-300">✅ 陣容優勢 (利)</div>
@@ -448,6 +522,98 @@
     const API_URL = "https://script.google.com/macros/s/AKfycbyqU3xJzzh9HpIwb1zXBDWmvNkzzsmaPYrJYx6fv0ezms8YUJU966obQjkkGV3nBwRctg/exec";
     const BOOTSTRAP_CACHE_KEY = 'dart_cache_bootstrap_v1';
 
+    const DEFAULT_POL27_LEG_FORMAT = [
+      {
+        name: "Leg 1: 男單",
+        category: "男單",
+        count: 1,
+        isBo3: true,
+        sets: [
+          { setNum: 1, label: "第 1 盤", game: "501 (Master Out)", rule: "MO", type: "ppd" },
+          { setNum: 2, label: "第 2 盤", game: "Cricket", rule: "Cricket", type: "mpr" },
+          { setNum: 3, label: "第 3 盤 (決勝)", game: "501 (Master Out)", rule: "MO", type: "ppd" }
+        ]
+      },
+      {
+        name: "Leg 2: 女單",
+        category: "女單",
+        count: 1,
+        isBo3: true,
+        sets: [
+          { setNum: 1, label: "第 1 盤", game: "501 (Open Out)", rule: "OI/OO", type: "ppd" },
+          { setNum: 2, label: "第 2 盤", game: "Cricket", rule: "Cricket", type: "mpr" },
+          { setNum: 3, label: "第 3 盤 (決勝)", game: "501 (Open Out)", rule: "OI/OO", type: "ppd" }
+        ]
+      },
+      {
+        name: "Leg 3: 雙打(男子)",
+        category: "雙打(男子)",
+        count: 2,
+        isBo3: true,
+        sets: [
+          { setNum: 1, label: "第 1 盤", game: "701 (Master Out)", rule: "MO", type: "ppd" },
+          { setNum: 2, label: "第 2 盤", game: "Cricket", rule: "Cricket", type: "mpr" },
+          { setNum: 3, label: "第 3 盤 (決勝)", game: "701 (Master Out)", rule: "MO", type: "ppd" }
+        ]
+      },
+      {
+        name: "Leg 4: 雙打(混合)",
+        category: "雙打(混合)",
+        count: 2,
+        isBo3: true,
+        sets: [
+          { setNum: 1, label: "第 1 盤", game: "501 (Open Out)", rule: "OI/OO", type: "ppd" },
+          { setNum: 2, label: "第 2 盤", game: "Cricket", rule: "Cricket", type: "mpr" },
+          { setNum: 3, label: "第 3 盤 (決勝)", game: "Choice (501/Cricket)", rule: "Choice", type: "ppd" }
+        ]
+      },
+      {
+        name: "Leg 5: 單打 701 (Double In/Out)",
+        category: "單打",
+        count: 1,
+        isBo3: false,
+        sets: [
+          { setNum: 1, label: "單局對決", game: "701 (Double In/Out)", rule: "DIDO", type: "ppd" }
+        ]
+      },
+      {
+        name: "Leg 6: 單打 Half-It",
+        category: "單打",
+        count: 1,
+        isBo3: false,
+        sets: [
+          { setNum: 1, label: "單局對決", game: "Half-It (控分練靶)", rule: "Half-It", type: "mpr" }
+        ]
+      },
+      {
+        name: "Leg 7: 雙打 Cricket",
+        category: "雙打",
+        count: 2,
+        isBo3: false,
+        sets: [
+          { setNum: 1, label: "單局對決", game: "Cricket", rule: "Cricket", type: "mpr" }
+        ]
+      },
+      {
+        name: "Leg 8: 三人賽 901",
+        category: "三人賽",
+        count: 3,
+        isBo3: false,
+        sets: [
+          { setNum: 1, label: "單局對決", game: "901 (Open Out)", rule: "OI/OO", type: "ppd" }
+        ]
+      },
+      {
+        name: "Leg 9: 隊制四人賽 Gallon 1101",
+        category: "隊制四人賽",
+        count: 4,
+        isBo3: false,
+        sets: [
+          { setNum: 1, label: "單局對決", game: "Gallon 1101 (Open Out)", rule: "OI/OO", type: "ppd" }
+        ]
+      }
+    ];
+
     let currentUser = null;
     try {
       const saved = localStorage.getItem('dart_user');
@@ -461,6 +627,8 @@
     let allStatsData = [];
     let systemSeasons = ["2026 S1 聯賽", "2026 盃賽", "季前熱身賽"];
     let globalLegFormat = [];
+    let adminFormatDraft = [];
+    let matchFormatDraft = [];
     let currentStatusFilter = 'all';
     let currentSeasonFilter = 'ALL';
     let lastBootstrapSync = 0;
@@ -480,6 +648,14 @@
       return String(str || '').replace(/[&<>"']/g, s => ({
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
       }[s]));
+    }
+
+    function cloneFormat(fmt) {
+      try {
+        return JSON.parse(JSON.stringify(Array.isArray(fmt) && fmt.length > 0 ? fmt : DEFAULT_POL27_LEG_FORMAT));
+      } catch (e) {
+        return JSON.parse(JSON.stringify(DEFAULT_POL27_LEG_FORMAT));
+      }
     }
 
     function normalizeGender(g) {
@@ -720,7 +896,262 @@
 
       const preview = document.getElementById('adminLegFormatPreview');
       if (preview) {
-        preview.innerText = globalLegFormat.length > 0 ? `已載入 ${globalLegFormat.length} 局官方賽制` : '預設賽制';
+        preview.innerText = globalLegFormat.length > 0 ? `已載入 ${globalLegFormat.length} 局預設賽制` : '預設賽制';
+      }
+
+      renderAdminFormatSummary();
+    }
+
+    /* ========================================================
+       【賽事賽制規格編輯器 (全季預設 + 單場自訂 共用引擎)】
+       ======================================================== */
+    function getFormatDraft(scope) {
+      return scope === 'admin' ? adminFormatDraft : matchFormatDraft;
+    }
+
+    function renderAdminFormatSummary() {
+      const box = document.getElementById('adminFormatSummary');
+      if (!box) return;
+      const list = globalLegFormat.length > 0 ? globalLegFormat : DEFAULT_POL27_LEG_FORMAT;
+      box.innerHTML = list.map(l => `
+        <span class="bg-slate-800/90 border border-slate-700 text-slate-200 px-2 py-0.5 rounded-lg">
+          <b class="text-indigo-300">${escapeHtml(l.name)}</b> · ${Number(l.count) || 1}人${l.isBo3 ? '·BO3' : ''}
+        </span>
+      `).join('');
+    }
+
+    function toggleAdminFormatEditor() {
+      const wrapper = document.getElementById('adminFormatEditorWrapper');
+      const btn = document.getElementById('btnToggleAdminFormat');
+      if (!wrapper) return;
+      const isHidden = wrapper.classList.contains('hidden');
+      if (isHidden) {
+        adminFormatDraft = cloneFormat(globalLegFormat);
+        renderLegFormatEditor('admin');
+        wrapper.classList.remove('hidden');
+        if (btn) btn.innerText = '🔼 收起編輯';
+      } else {
+        wrapper.classList.add('hidden');
+        if (btn) btn.innerText = '✏️ 編輯賽制';
+      }
+    }
+
+    function toggleMatchFormatEditor() {
+      const wrapper = document.getElementById('matchFormatEditorWrapper');
+      const btn = document.getElementById('btnToggleMatchFormat');
+      if (!wrapper || !activeMatchDetails) return;
+      const isHidden = wrapper.classList.contains('hidden');
+      if (isHidden) {
+        matchFormatDraft = cloneFormat(activeMatchDetails.legFormat);
+        renderLegFormatEditor('match');
+        wrapper.classList.remove('hidden');
+        if (btn) btn.innerText = '🔼 收起本場賽制';
+      } else {
+        wrapper.classList.add('hidden');
+        if (btn) btn.innerText = '⚙️ 修改本場賽制';
+      }
+    }
+
+    function loadDefaultToMatchFormat() {
+      matchFormatDraft = cloneFormat(globalLegFormat);
+      renderLegFormatEditor('match');
+    }
+
+    function renderLegFormatEditor(scope) {
+      const container = document.getElementById(scope === 'admin' ? 'adminFormatEditorList' : 'matchFormatEditorList');
+      if (!container) return;
+      const draft = getFormatDraft(scope);
+
+      if (draft.length === 0) {
+        container.innerHTML = '<p class="text-xs text-slate-500 text-center py-3">尚未設定任何 Leg，請按下方新增</p>';
+        return;
+      }
+
+      container.innerHTML = draft.map((leg, idx) => {
+        const gRule = getLegGenderRule(leg);
+        const sets = leg.sets && leg.sets.length > 0 ? leg.sets : [{ setNum: 1, label: '單局對決', game: '501 (Open Out)', rule: 'OI/OO', type: 'ppd' }];
+
+        const setsHtml = sets.map((st, sIdx) => `
+          <div class="grid grid-cols-12 gap-1.5 items-center">
+            <span class="col-span-3 text-[10px] text-slate-400 font-bold truncate">${escapeHtml(st.label || `第 ${sIdx + 1} 盤`)}</span>
+            <input type="text" value="${escapeHtml(st.game || '')}" placeholder="項目名稱 (如 501 / Cricket)"
+              oninput="updateFormatSetField('${scope}', ${idx}, ${sIdx}, 'game', this.value)"
+              class="col-span-6 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-[11px] text-slate-200 focus:border-indigo-400 focus:outline-none">
+            <select onchange="updateFormatSetField('${scope}', ${idx}, ${sIdx}, 'type', this.value)"
+              class="col-span-3 bg-slate-900 border border-slate-700 rounded-lg px-1.5 py-1 text-[10px] font-mono text-yellow-300">
+              <option value="ppd" ${(st.type || 'ppd') === 'ppd' ? 'selected' : ''}>PPD (01)</option>
+              <option value="mpr" ${st.type === 'mpr' ? 'selected' : ''}>MPR (CRI)</option>
+            </select>
+          </div>
+        `).join('');
+
+        return `
+          <div class="bg-slate-800/70 p-2.5 rounded-xl border border-slate-700 space-y-2">
+            <div class="flex items-center justify-between gap-1.5">
+              <span class="text-[10px] font-black text-indigo-300 shrink-0">#${idx + 1}</span>
+              <input type="text" value="${escapeHtml(leg.name || '')}" placeholder="例如: Leg ${idx + 1}: 男單"
+                oninput="updateFormatLegField('${scope}', ${idx}, 'name', this.value)"
+                class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-xs font-bold text-white focus:border-indigo-400 focus:outline-none">
+              <div class="flex items-center gap-1 shrink-0">
+                <button type="button" onclick="moveFormatLeg('${scope}', ${idx}, -1)" class="w-6 h-6 rounded bg-slate-900 hover:bg-slate-700 text-slate-300 text-[10px] cursor-pointer" title="上移">↑</button>
+                <button type="button" onclick="moveFormatLeg('${scope}', ${idx}, 1)" class="w-6 h-6 rounded bg-slate-900 hover:bg-slate-700 text-slate-300 text-[10px] cursor-pointer" title="下移">↓</button>
+                <button type="button" onclick="removeFormatLeg('${scope}', ${idx})" class="w-6 h-6 rounded bg-rose-950 hover:bg-rose-800 text-rose-300 text-xs font-bold cursor-pointer" title="刪除">×</button>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-1.5 text-[11px]">
+              <select onchange="updateFormatLegField('${scope}', ${idx}, 'count', parseInt(this.value, 10))"
+                class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-slate-200">
+                <option value="1" ${Number(leg.count) === 1 ? 'selected' : ''}>👤 1 人 (單打)</option>
+                <option value="2" ${Number(leg.count) === 2 ? 'selected' : ''}>👥 2 人 (雙打)</option>
+                <option value="3" ${Number(leg.count) === 3 ? 'selected' : ''}>👨‍👩‍👦 3 人賽</option>
+                <option value="4" ${Number(leg.count) === 4 ? 'selected' : ''}>🛡️ 4 人隊際</option>
+              </select>
+
+              <select onchange="toggleFormatBo3('${scope}', ${idx}, this.value === 'true')"
+                class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-slate-200">
+                <option value="false" ${!leg.isBo3 ? 'selected' : ''}>單盤決勝</option>
+                <option value="true" ${leg.isBo3 ? 'selected' : ''}>BO3 三盤兩勝</option>
+              </select>
+
+              <span id="fmt-gbadge-${scope}-${idx}" class="text-[10px] border px-1.5 py-1 rounded-lg font-bold text-center truncate ${gRule.badgeCls}">
+                ${gRule.label}
+              </span>
+            </div>
+
+            <div class="space-y-1 pt-1 border-t border-slate-700/60">
+              ${setsHtml}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function updateFormatLegField(scope, legIdx, field, val) {
+      const draft = getFormatDraft(scope);
+      if (!draft[legIdx]) return;
+      draft[legIdx][field] = val;
+      if (field === 'name') {
+        draft[legIdx].category = val;
+        const badgeEl = document.getElementById(`fmt-gbadge-${scope}-${legIdx}`);
+        if (badgeEl) {
+          const gRule = getLegGenderRule(draft[legIdx]);
+          badgeEl.className = `text-[10px] border px-1.5 py-1 rounded-lg font-bold text-center truncate ${gRule.badgeCls}`;
+          badgeEl.innerText = gRule.label;
+        }
+      }
+    }
+
+    function updateFormatSetField(scope, legIdx, setIdx, field, val) {
+      const draft = getFormatDraft(scope);
+      if (!draft[legIdx] || !draft[legIdx].sets || !draft[legIdx].sets[setIdx]) return;
+      draft[legIdx].sets[setIdx][field] = val;
+      if (field === 'game') {
+        const badgeEl = document.getElementById(`fmt-gbadge-${scope}-${legIdx}`);
+        if (badgeEl) {
+          const gRule = getLegGenderRule(draft[legIdx]);
+          badgeEl.className = `text-[10px] border px-1.5 py-1 rounded-lg font-bold text-center truncate ${gRule.badgeCls}`;
+          badgeEl.innerText = gRule.label;
+        }
+      }
+    }
+
+    function toggleFormatBo3(scope, legIdx, isBo3) {
+      const draft = getFormatDraft(scope);
+      const leg = draft[legIdx];
+      if (!leg) return;
+      leg.isBo3 = isBo3;
+      const firstGame = leg.sets?.[0]?.game || '501 (Open Out)';
+      const firstType = leg.sets?.[0]?.type || 'ppd';
+      if (isBo3) {
+        leg.sets = [
+          { setNum: 1, label: '第 1 盤', game: firstGame, rule: '', type: firstType },
+          { setNum: 2, label: '第 2 盤', game: leg.sets?.[1]?.game || 'Cricket', rule: 'Cricket', type: leg.sets?.[1]?.type || 'mpr' },
+          { setNum: 3, label: '第 3 盤 (決勝)', game: leg.sets?.[2]?.game || firstGame, rule: '', type: leg.sets?.[2]?.type || firstType }
+        ];
+      } else {
+        leg.sets = [
+          { setNum: 1, label: '單局對決', game: firstGame, rule: '', type: firstType }
+        ];
+      }
+      renderLegFormatEditor(scope);
+    }
+
+    function addFormatLeg(scope) {
+      const draft = getFormatDraft(scope);
+      const nextNum = draft.length + 1;
+      draft.push({
+        name: `Leg ${nextNum}: 自訂賽局`,
+        category: '單打',
+        count: 1,
+        isBo3: false,
+        sets: [{ setNum: 1, label: '單局對決', game: '501 (Open Out)', rule: 'OI/OO', type: 'ppd' }]
+      });
+      renderLegFormatEditor(scope);
+    }
+
+    function removeFormatLeg(scope, legIdx) {
+      const draft = getFormatDraft(scope);
+      if (draft.length <= 1) return alert('最少需保留 1 個 Leg！');
+      draft.splice(legIdx, 1);
+      renderLegFormatEditor(scope);
+    }
+
+    function moveFormatLeg(scope, legIdx, dir) {
+      const draft = getFormatDraft(scope);
+      const targetIdx = legIdx + dir;
+      if (targetIdx < 0 || targetIdx >= draft.length) return;
+      const temp = draft[legIdx];
+      draft[legIdx] = draft[targetIdx];
+      draft[targetIdx] = temp;
+      renderLegFormatEditor(scope);
+    }
+
+    async function saveAdminLegFormat() {
+      if (adminFormatDraft.length === 0) return alert('賽制不能為空');
+      const res = await apiRequest('POST', { action: 'saveLegFormat', legFormat: adminFormatDraft });
+      if (res && res.success) {
+        globalLegFormat = cloneFormat(adminFormatDraft);
+        renderSeasonsUI();
+        alert(res.message || '✅ 全季預設賽制已儲存！');
+        refreshBootstrapData(false);
+      } else {
+        alert(res?.message || res?.error || '儲存賽制失敗');
+      }
+    }
+
+    async function resetAdminLegFormat() {
+      if (!confirm('確定要還原為 POL27 官方預設 9 局賽制嗎？')) return;
+      adminFormatDraft = cloneFormat(DEFAULT_POL27_LEG_FORMAT);
+      renderLegFormatEditor('admin');
+    }
+
+    async function applyAndSaveMatchLegFormat() {
+      if (!activeMatchDetails || matchFormatDraft.length === 0) return alert('賽制不能為空');
+      const newFormat = cloneFormat(matchFormatDraft);
+      const oldLineup = activeMatchDetails.captainLineup || [];
+      const adjustedLineup = newFormat.map((leg, i) => {
+        const oldArr = oldLineup[i] || [];
+        return Array.from({ length: Number(leg.count) || 1 }, (_, s) => oldArr[s] || '');
+      });
+
+      const res = await apiRequest('POST', {
+        action: 'saveLineup',
+        matchId: activeMatchId,
+        lineup: adjustedLineup,
+        legFormat: newFormat
+      });
+      if (res && res.success) {
+        isLineupDirty = false;
+        activeMatchDetails.legFormat = newFormat;
+        activeMatchDetails.captainLineup = adjustedLineup;
+        matchDetailsCache[activeMatchId] = activeMatchDetails;
+        document.getElementById('matchFormatEditorWrapper').classList.add('hidden');
+        document.getElementById('btnToggleMatchFormat').innerText = '⚙️ 修改本場賽制';
+        renderMatchDetailsModal();
+        alert('✅ 本場專屬賽制已儲存並套用！');
+      } else {
+        alert(res?.message || res?.error || '儲存本場賽制失敗');
       }
     }
 
@@ -840,6 +1271,8 @@
       document.getElementById('mdTitle').innerText = `VS ${match.opponent}`;
       document.getElementById('mdMeta').innerText = `🕒 ${match.date} ｜ 📍 ${match.venue}`;
       document.getElementById('aiLineupAnalysisBox').classList.add('hidden');
+      document.getElementById('matchFormatEditorWrapper').classList.add('hidden');
+      document.getElementById('btnToggleMatchFormat').innerText = '⚙️ 修改本場賽制';
       document.getElementById('matchDetailModal').classList.remove('hidden');
       switchMatchModalTab('checkin');
 
@@ -982,6 +1415,7 @@
 
       // 2. 出賽排陣
       document.getElementById('mdLegCount').innerText = legFormat.length;
+      document.getElementById('btnToggleMatchFormat').classList.toggle('hidden', !isAdmin);
       document.getElementById('btnAiLineup').classList.toggle('hidden', !isAdmin);
       document.getElementById('btnSaveLineup').classList.toggle('hidden', !isAdmin);
 
@@ -1067,9 +1501,7 @@
           const setStats = legExistingStats.filter(s => Number(s.subSet || 1) === Number(setObj.setNum));
           const slotCount = Math.max(Number(leg.count) || 1, setStats.length);
 
-          // 兩階段消耗配對：
-          // 1) 先精準配對「出賽排陣」中的隊員，並從待配對池中移除
-          // 2) 再將剩餘已儲存的賽果數據（例如未先排陣或臨時替補）依序填入空餘欄位
+          // 兩階段消耗配對：先精準配對排陣隊員，再依序填入其餘已儲存數據
           const remainingStats = [...setStats];
           const slotMatched = new Array(slotCount).fill(null);
 
@@ -1198,7 +1630,6 @@
       const latePlayers = players.filter(p => p.status === 'late');
       const unmarkedPlayers = players.filter(p => p.status === 'unmarked');
 
-      // 可出賽池（排除已標記「❌ 缺席」的隊員）
       const availablePool = [...attendingPlayers, ...latePlayers, ...unmarkedPlayers];
       if (availablePool.length === 0) {
         return alert('目前所有隊員皆標記為「❌ 缺席」，無法進行 AI 排陣！');
@@ -1218,7 +1649,6 @@
         const count = Number(leg.count) || 1;
         const gRule = getLegGenderRule(leg);
 
-        // 排陣優先順序：先保證有硬性性別限制的局，再排其餘男優先局
         let priority = 50;
         if (gRule.code === 'WOMEN_ONLY') priority = 120 - idx * 0.1;
         else if (gRule.code === 'MEN_ONLY' && count === 1) priority = 115 - idx * 0.1;
@@ -1247,7 +1677,6 @@
       const genderShortages = [];
       const femaleFallbackLegs = [];
 
-      // 輔助函式：依單一席位的性別需求挑選最優隊員
       function pickPlayerForSlot(meta, slotIdx, slotReq, pickedInThisLeg) {
         const { idx, count, isDidoOrMo, focus } = meta;
         let bestPlayer = null;
@@ -1257,11 +1686,9 @@
         availablePool.forEach(p => {
           if (pickedInThisLeg.has(p.uid)) return;
 
-          // 硬性性別過濾
           if (slotReq === 'M_STRICT' && p.gender !== 'M') return;
           if (slotReq === 'F_STRICT' && p.gender !== 'F') return;
 
-          // 1. 技戰術適配基礎分 (0~100)
           let skillScore = 0;
           if (focus === '01') {
             skillScore = 0.45 * p.dim01 + 0.25 * p.ratingNorm + (isDidoOrMo ? 0.20 * p.dimClutch : 0.15 * p.dimClutch) + 0.15 * p.dimForm;
@@ -1273,7 +1700,6 @@
             skillScore = 0.38 * p.dim01 + 0.22 * p.dimCricket + 0.25 * p.ratingNorm + 0.15 * p.dimForm;
           }
 
-          // 2. 出席優先度（確保已確認出席 > 遲到中後段 > 未簽到）
           let attBonus = 0;
           if (p.status === 'attending') {
             attBonus = 100;
@@ -1283,7 +1709,6 @@
             attBonus = -150;
           }
 
-          // 3. 性別偏好（「其餘無所謂，但以男為主，如非人不夠」）
           let genderBonus = 0;
           if (slotReq === 'PREFER_M') {
             if (p.gender === 'M') genderBonus = 80;
@@ -1291,10 +1716,7 @@
             else genderBonus = -35;
           }
 
-          // 4. 出賽次數輪換負荷平衡
           const fatiguePenalty = appearances[p.uid] * (count === 1 ? 10 : 8);
-
-          // 5. 單打技術權重加成
           const skillWeighted = skillScore * (count === 1 ? 0.72 : 0.60);
 
           const totalUtility = skillWeighted + attBonus + genderBonus - fatiguePenalty;
@@ -1324,13 +1746,11 @@
         }
       }
 
-      // 逐 Leg 指派
       orderedLegs.forEach(meta => {
         const { count, gRule } = meta;
         const pickedInThisLeg = new Set();
 
         if (gRule.code === 'MIN_ONE_FEMALE') {
-          // 1101 四人賽：先鎖定最後一格為「必須女隊員 (F_STRICT)」，其餘位置以男為主 (PREFER_M)
           const fSlot = count - 1;
           pickPlayerForSlot(meta, fSlot, 'F_STRICT', pickedInThisLeg);
           for (let slot = 0; slot < count; slot++) {
@@ -1352,7 +1772,6 @@
         }
       });
 
-      // 寫入下拉選單並即時觸發每局性別檢查
       document.querySelectorAll('.lineup-select').forEach(sel => {
         const legIdx = parseInt(sel.dataset.leg, 10);
         const slotIdx = parseInt(sel.dataset.slot, 10);
@@ -1363,7 +1782,6 @@
       });
       legFormat.forEach((_, idx) => validateLegGenderUI(idx));
 
-      // 計算三維評分與綜合分數
       const totalSlots = legFormat.reduce((sum, l) => sum + (Number(l.count) || 1), 0);
       const filledEntries = legFitScores;
       const avgSkillFit = filledEntries.length > 0
@@ -1438,7 +1856,6 @@
         reasons.push(`將「⏰ 遲到」隊員 ${lateLegsDesc} 集中安排於中後段局數，確保趕得及熱身出賽。`);
       }
 
-      // Pros
       const attSlotsCount = filledEntries.filter(e => e.player.status === 'attending').length;
       if (attSlotsCount === totalSlots && totalSlots > 0 && genderShortages.length === 0) {
         pros.push(`<b>100% 出席及規則達標</b>：全部席位均由已確認出席且符合性別規則的隊員出戰。`);
@@ -1456,7 +1873,6 @@
         pros.push(`<b>專長高度契合</b>（適配分 ${avgSkillFit}）：01 與 Cricket 局各司其職，整體取分期望值高。`);
       }
 
-      // Cons
       if (unsetGenderPlayers.length > 0) {
         cons.push(`<b>有隊員未設定性別</b>（${unsetGenderPlayers.map(p => escapeHtml(p.name)).join('、')}）：請隊長到「👑 隊長管理」設定男女，否則無法參與嚴格性別局排陣。`);
       }
@@ -1556,7 +1972,8 @@
       const res = await apiRequest('POST', {
         action: 'saveLineup',
         matchId: activeMatchId,
-        lineup: lineup
+        lineup: lineup,
+        legFormat: activeMatchDetails.legFormat
       });
       if (res && res.success) {
         isLineupDirty = false;
@@ -1632,6 +2049,7 @@
        【隊長管理後台（含隊員性別設定）】
        ======================================================== */
     async function loadAdminData() {
+      renderAdminFormatSummary();
       const pendingList = document.getElementById('pendingUsersList');
       const genderList = document.getElementById('activeUsersGenderList');
       const missingBadge = document.getElementById('genderMissingCountBadge');
@@ -1776,7 +2194,7 @@
       const res = await apiRequest('POST', {
         action: 'addMatch',
         season, round, type, isHome, date, opponent, venue, isFinished, score,
-        legFormat: globalLegFormat
+        legFormat: globalLegFormat.length > 0 ? globalLegFormat : DEFAULT_POL27_LEG_FORMAT
       });
       if (res && res.success) {
         alert('🚀 賽程建立成功！');
@@ -1993,3 +2411,4 @@
   </script>
 </body>
 </html>
+
