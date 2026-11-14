@@ -47,6 +47,23 @@
         <input type="password" id="password" placeholder="Pin碼" class="w-full p-3 rounded-xl bg-slate-800 text-xs border border-slate-700 text-slate-200 focus:outline-none focus:border-rose-500">
         <div id="registerFields" class="hidden space-y-3">
           <input type="text" id="regName" placeholder="隊員姓名 / 鏢名" class="w-full p-3 rounded-xl bg-slate-800 text-xs border border-slate-700 text-slate-200">
+          <div>
+            <label class="text-[11px] font-bold text-slate-300 block mb-1">隊員性別 (用作聯賽排陣)：</label>
+            <div class="grid grid-cols-2 gap-2">
+              <label class="cursor-pointer">
+                <input type="radio" name="regGender" value="M" class="peer sr-only">
+                <div class="text-center p-2.5 rounded-xl border border-slate-700 bg-slate-800 peer-checked:bg-sky-600 peer-checked:border-sky-400 peer-checked:text-white text-xs font-bold text-slate-300 transition">
+                  👦 男 (Male)
+                </div>
+              </label>
+              <label class="cursor-pointer">
+                <input type="radio" name="regGender" value="F" class="peer sr-only">
+                <div class="text-center p-2.5 rounded-xl border border-slate-700 bg-slate-800 peer-checked:bg-pink-600 peer-checked:border-pink-400 peer-checked:text-white text-xs font-bold text-slate-300 transition">
+                  👧 女 (Female)
+                </div>
+              </label>
+            </div>
+          </div>
           <input type="number" step="0.01" id="regRating" placeholder="POL27 初始 Rating (例如: 14.85)" class="w-full p-3 rounded-xl bg-slate-800 text-xs border border-slate-700 text-slate-200">
         </div>
         <button onclick="handleAuthAction()" id="authSubmitBtn" class="w-full bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 font-bold p-3 rounded-xl text-xs transition cursor-pointer shadow-lg">登入</button>
@@ -247,6 +264,18 @@
         </button>
       </div>
 
+      <!-- 隊員性別設定（補填與修改） -->
+      <div class="bg-slate-900 p-4 rounded-2xl border border-sky-500/40 space-y-2.5 shadow-lg">
+        <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+          <h3 class="text-xs font-black text-sky-300 flex items-center gap-1.5">
+            <span>⚤</span> 隊員性別設定 (供 AI 與排陣檢核使用)
+          </h3>
+          <span id="genderMissingCountBadge" class="text-[10px] px-2 py-0.5 rounded-full font-bold bg-slate-800 text-slate-300">讀取中...</span>
+        </div>
+        <p class="text-[10px] text-slate-400">點擊「男」或「女」即時儲存，用於男單、女單、男雙、混雙及 1101 最少 1 女規則。</p>
+        <div id="activeUsersGenderList" class="space-y-2 text-xs"></div>
+      </div>
+
       <!-- 待審批名單 -->
       <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800 shadow-lg">
         <h3 class="text-xs font-bold mb-2.5 text-slate-300 flex items-center gap-1.5">
@@ -329,7 +358,7 @@
                 <span class="text-base">🧠</span>
                 <div>
                   <h4 class="text-xs font-black text-indigo-200">AI 戰術排陣評估報告</h4>
-                  <p class="text-[10px] text-slate-400">已自動填入下方出賽名單，隊長可按需要微調後儲存</p>
+                  <p class="text-[10px] text-slate-400">已按性別與賽制規則自動填入，隊長可微調後儲存</p>
                 </div>
               </div>
               <div class="text-right">
@@ -436,7 +465,6 @@
     let currentSeasonFilter = 'ALL';
     let lastBootstrapSync = 0;
 
-    // 賽事詳情暫存與記憶快取
     let activeMatchId = null;
     let activeMatchDetails = null;
     let matchDetailsCache = {};
@@ -444,7 +472,6 @@
 
     window.addEventListener('DOMContentLoaded', () => {
       checkAuthState();
-      // 1. 立即從本地快取渲染（0 毫秒開屏），再背景同步最新數據
       const hasCache = hydrateFromLocalCache();
       refreshBootstrapData(!hasCache);
     });
@@ -453,6 +480,45 @@
       return String(str || '').replace(/[&<>"']/g, s => ({
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
       }[s]));
+    }
+
+    function normalizeGender(g) {
+      const val = String(g || '').trim().toUpperCase();
+      if (val === 'M' || val === '男' || val === 'MALE') return 'M';
+      if (val === 'F' || val === '女' || val === 'FEMALE') return 'F';
+      return '';
+    }
+
+    function getGenderEmoji(g) {
+      const norm = normalizeGender(g);
+      if (norm === 'M') return '👦';
+      if (norm === 'F') return '👧';
+      return '❓';
+    }
+
+    function getGenderBadgeHtml(g) {
+      const norm = normalizeGender(g);
+      if (norm === 'M') return '<span class="text-[9px] bg-sky-950 text-sky-300 border border-sky-800 px-1.5 py-0.5 rounded font-bold ml-1">👦男</span>';
+      if (norm === 'F') return '<span class="text-[9px] bg-pink-950 text-pink-300 border border-pink-800 px-1.5 py-0.5 rounded font-bold ml-1">👧女</span>';
+      return '<span class="text-[9px] bg-amber-950 text-amber-300 border border-amber-800 px-1.5 py-0.5 rounded font-bold ml-1">❓未設</span>';
+    }
+
+    function getLegGenderRule(leg) {
+      const setsText = (leg.sets || []).map(s => `${s.game || ''} ${s.rule || ''}`).join(' ');
+      const fullText = `${leg.name || ''} ${leg.category || ''} ${setsText}`;
+      if (/混雙|混合|Mixed/i.test(fullText)) {
+        return { code: 'MIXED', label: '⚤ 需1男1女', badgeCls: 'bg-purple-950 text-purple-300 border-purple-800' };
+      }
+      if (/女單|女雙|女子|Women'?s|Ladies/i.test(fullText)) {
+        return { code: 'WOMEN_ONLY', label: '👧 限全女', badgeCls: 'bg-pink-950 text-pink-300 border-pink-800' };
+      }
+      if (/男單|男雙|男子|Men'?s/i.test(fullText)) {
+        return { code: 'MEN_ONLY', label: '👦 限全男', badgeCls: 'bg-sky-950 text-sky-300 border-sky-800' };
+      }
+      if (/1101|Gallon|四人/i.test(fullText)) {
+        return { code: 'MIN_ONE_FEMALE', label: '👩 1101・最少1女', badgeCls: 'bg-fuchsia-950 text-fuchsia-300 border-fuchsia-800' };
+      }
+      return { code: 'ANY_PREFER_MEN', label: '🎯 男為主・不足可補女', badgeCls: 'bg-slate-800 text-slate-300 border-slate-700' };
     }
 
     async function apiRequest(method, payload = {}) {
@@ -543,7 +609,6 @@
           }));
         } catch (e) {}
       } else if (showLoading) {
-        // 後備方案：如果未部署新版 getBootstrap，自動降級使用舊 API 並行載入
         await Promise.all([loadSettings(), loadMatches(), loadStats(false)]);
       }
     }
@@ -820,6 +885,58 @@
       });
     }
 
+    function validateLegGender(legIdx, uids) {
+      if (!activeMatchDetails) return [];
+      const leg = activeMatchDetails.legFormat[legIdx];
+      const allUsers = activeMatchDetails.allActiveUsers || [];
+      if (!leg) return [];
+
+      const rule = getLegGenderRule(leg).code;
+      const selected = (uids || []).filter(Boolean).map(uid => allUsers.find(u => String(u.userId) === String(uid))).filter(Boolean);
+      if (selected.length === 0) return [];
+
+      const warnings = [];
+      const genders = selected.map(u => normalizeGender(u.gender));
+      const mCount = genders.filter(g => g === 'M').length;
+      const fCount = genders.filter(g => g === 'F').length;
+      const uCount = genders.filter(g => g === '').length;
+      const reqCount = Number(leg.count) || 1;
+
+      if (rule === 'MEN_ONLY') {
+        if (fCount > 0) warnings.push(`⚠️ ${leg.name} 必需全男，不可選女隊員！`);
+        else if (uCount > 0) warnings.push(`❓ 部分已選隊員未設定性別，請到「隊長管理」補填。`);
+      } else if (rule === 'WOMEN_ONLY') {
+        if (mCount > 0) warnings.push(`⚠️ ${leg.name} 必需全女，不可選男隊員！`);
+        else if (uCount > 0) warnings.push(`❓ 部分已選隊員未設定性別，請到「隊長管理」補填。`);
+      } else if (rule === 'MIXED') {
+        if (mCount > 1 || fCount > 1) warnings.push(`⚠️ ${leg.name} 混雙必須為 1 男 1 女！`);
+        else if (selected.length >= 2 && (mCount !== 1 || fCount !== 1)) warnings.push(`⚠️ ${leg.name} 必須剛好 1 男 1 女（請確認隊員性別）。`);
+        else if (uCount > 0) warnings.push(`❓ 已選隊員未設定性別，請先補填。`);
+      } else if (rule === 'MIN_ONE_FEMALE') {
+        if (selected.length >= reqCount && fCount < 1) warnings.push(`⚠️ ${leg.name}（1101賽制）必須包含最少 1 名女隊員！`);
+      }
+      return warnings;
+    }
+
+    function validateLegGenderUI(legIdx) {
+      const warnEl = document.getElementById(`lineup-gender-warn-${legIdx}`);
+      if (!warnEl) return;
+      const uids = Array.from(document.querySelectorAll(`.lineup-select[data-leg="${legIdx}"]`)).map(s => s.value);
+      const warnings = validateLegGender(legIdx, uids);
+      if (warnings.length > 0) {
+        warnEl.innerText = warnings.join(' ');
+        warnEl.classList.remove('hidden');
+      } else {
+        warnEl.innerText = '';
+        warnEl.classList.add('hidden');
+      }
+    }
+
+    function onLineupSelectChange(legIdx) {
+      isLineupDirty = true;
+      validateLegGenderUI(legIdx);
+    }
+
     function renderMatchDetailsModal() {
       if (!activeMatchDetails) return;
       const isAdmin = currentUser && currentUser.role === 'admin';
@@ -853,9 +970,10 @@
       } else {
         attContainer.innerHTML = attendanceList.map(a => `
           <div class="flex justify-between items-center bg-slate-950/60 px-3 py-2 rounded-xl border border-slate-800 text-xs">
-            <div>
+            <div class="flex items-center flex-wrap gap-1">
               <span class="font-bold text-white">${escapeHtml(a.name)}</span>
-              <span class="text-[10px] text-yellow-400 font-mono ml-2">Rt. ${parseFloat(a.rating || 0).toFixed(2)} [${escapeHtml(a.ratingClass || 'N')}]</span>
+              ${getGenderBadgeHtml(a.gender)}
+              <span class="text-[10px] text-yellow-400 font-mono ml-1">Rt. ${parseFloat(a.rating || 0).toFixed(2)} [${escapeHtml(a.ratingClass || 'N')}]</span>
             </div>
             ${attStatusBadge[a.status] || a.status}
           </div>
@@ -878,6 +996,7 @@
       lineupContainer.innerHTML = legFormat.map((leg, legIdx) => {
         const assigned = captainLineup[legIdx] || [];
         const slots = Array.from({ length: leg.count || 1 });
+        const gRule = getLegGenderRule(leg);
 
         const slotsHtml = slots.map((_, slotIdx) => {
           const curUid = assigned[slotIdx] ? String(assigned[slotIdx]) : '';
@@ -885,10 +1004,11 @@
             const opts = sortedUsers.map(u => {
               const st = attMap[u.userId];
               const tag = st === 'attending' ? '✅' : (st === 'late' ? '⏰' : (st === 'absent' ? '❌' : '•'));
-              return `<option value="${u.userId}" ${curUid === String(u.userId) ? 'selected' : ''}>${tag} ${escapeHtml(u.name)} (Rt.${parseFloat(u.rating || 0).toFixed(1)})</option>`;
+              const gIcon = getGenderEmoji(u.gender);
+              return `<option value="${u.userId}" ${curUid === String(u.userId) ? 'selected' : ''}>${tag}${gIcon} ${escapeHtml(u.name)} (Rt.${parseFloat(u.rating || 0).toFixed(1)})</option>`;
             }).join('');
             return `
-              <select onchange="isLineupDirty = true" data-leg="${legIdx}" data-slot="${slotIdx}" class="lineup-select w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-2 text-xs text-slate-200 focus:border-amber-400 focus:outline-none">
+              <select onchange="onLineupSelectChange(${legIdx})" data-leg="${legIdx}" data-slot="${slotIdx}" class="lineup-select w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-2 text-xs text-slate-200 focus:border-amber-400 focus:outline-none">
                 <option value="">-- 未指派第 ${slotIdx + 1} 位 --</option>
                 ${opts}
               </select>
@@ -897,7 +1017,7 @@
             const u = allActiveUsers.find(x => String(x.userId) === curUid);
             return `
               <div class="bg-slate-900/90 border border-slate-800 rounded-xl px-3 py-2 text-xs flex justify-between items-center">
-                <span class="${u ? 'text-white font-bold' : 'text-slate-500'}">${u ? escapeHtml(u.name) : '待隊長指派'}</span>
+                <span class="${u ? 'text-white font-bold' : 'text-slate-500'}">${u ? `${getGenderEmoji(u.gender)} ${escapeHtml(u.name)}` : '待隊長指派'}</span>
                 ${u ? `<span class="text-[10px] font-mono text-yellow-400">Rt. ${parseFloat(u.rating || 0).toFixed(2)}</span>` : ''}
               </div>
             `;
@@ -905,15 +1025,22 @@
         }).join('');
 
         const setsDesc = (leg.sets || []).map(s => s.game).join(' / ');
+        const initialWarns = validateLegGender(legIdx, assigned);
         return `
           <div class="bg-slate-950/60 p-3 rounded-2xl border border-slate-800 space-y-2">
-            <div class="flex justify-between items-center">
-              <span class="text-xs font-black text-rose-400">${escapeHtml(leg.name)}</span>
-              <span class="text-[10px] text-slate-400">${leg.isBo3 ? 'BO3 三盤兩勝' : '單盤決勝'}</span>
+            <div class="flex justify-between items-center gap-2">
+              <div class="flex items-center flex-wrap gap-1.5">
+                <span class="text-xs font-black text-rose-400">${escapeHtml(leg.name)}</span>
+                <span class="text-[9px] border px-1.5 py-0.5 rounded-full font-bold ${gRule.badgeCls}">${gRule.label}</span>
+              </div>
+              <span class="text-[10px] text-slate-400 shrink-0">${leg.isBo3 ? 'BO3 三盤兩勝' : '單盤決勝'}</span>
             </div>
             <p class="text-[10px] text-slate-400">賽制：${escapeHtml(setsDesc)}</p>
             <div class="grid ${leg.count > 1 ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1'} gap-2">
               ${slotsHtml}
+            </div>
+            <div id="lineup-gender-warn-${legIdx}" class="${initialWarns.length > 0 ? '' : 'hidden'} text-[11px] font-bold text-rose-300 bg-rose-950/60 border border-rose-800/80 px-2.5 py-1.5 rounded-xl">
+              ${escapeHtml(initialWarns.join(' '))}
             </div>
           </div>
         `;
@@ -925,7 +1052,7 @@
       scoreInput.disabled = !isAdmin;
       document.getElementById('mdAdminStatsActions').classList.toggle('hidden', !isAdmin);
 
-     const statsContainer = document.getElementById('mdLegStatsContainer');
+      const statsContainer = document.getElementById('mdLegStatsContainer');
       statsContainer.innerHTML = legFormat.map((leg, legIdx) => {
         const assigned = captainLineup[legIdx] || [];
         const legExistingStats = legStats.filter(s => Number(s.legIndex) === Number(legIdx));
@@ -1014,8 +1141,9 @@
         `;
       }).join('');
     }
+
     /* ========================================================
-       【一鍵 AI 建議排陣核心引擎 & 利弊評分報告】
+       【一鍵 AI 建議排陣核心引擎（含性別規則）& 利弊評分報告】
        ======================================================== */
     function runAiLineup() {
       if (!activeMatchDetails) return;
@@ -1026,11 +1154,9 @@
 
       isLineupDirty = true;
 
-      // 建立出席狀態對照表
       const attMap = {};
       attendanceList.forEach(a => { attMap[String(a.userId)] = a.status; });
 
-      // 整合戰力榜的 6 角雷達與手感數據
       const statMap = {};
       (allStatsData || []).forEach(s => { statMap[String(s.id)] = s; });
 
@@ -1040,9 +1166,9 @@
         const rt = parseFloat(u.rating || st.rating) || 1;
         const avgPpd = parseFloat(u.avgPpd || st.avgPpd) || 0;
         const avgMpr = parseFloat(u.avgMpr || st.avgMpr) || 0;
-        const status = attMap[uid] || 'unmarked'; // attending | late | absent | unmarked
+        const status = attMap[uid] || 'unmarked';
+        const gender = normalizeGender(u.gender || st.gender);
 
-        // 01 / Cricket / 抗壓 / 狀態標準化分數 (0~100)
         const dim01 = st.radar?.dim01 ?? (avgPpd > 0 ? Math.min(100, Math.max(30, Math.round(((avgPpd - 12) / 26) * 70 + 30))) : Math.min(88, Math.round(rt * 3.5)));
         const dimCricket = st.radar?.dimCricket ?? (avgMpr > 0 ? Math.min(100, Math.max(30, Math.round(((avgMpr - 1.2) / 3.0) * 70 + 30))) : Math.min(88, Math.round(rt * 3.5)));
         const dimClutch = st.radar?.dimClutch ?? Math.min(95, Math.max(40, Math.round(rt * 3.2 + 15)));
@@ -1052,6 +1178,7 @@
         return {
           uid,
           name: u.name,
+          gender,
           rating: rt,
           avgPpd,
           avgMpr,
@@ -1071,35 +1198,44 @@
       const latePlayers = players.filter(p => p.status === 'late');
       const unmarkedPlayers = players.filter(p => p.status === 'unmarked');
 
-      // 可出賽池（嚴格排除「缺席」，僅在極端情況才不會選到）
+      // 可出賽池（排除已標記「❌ 缺席」的隊員）
       const availablePool = [...attendingPlayers, ...latePlayers, ...unmarkedPlayers];
       if (availablePool.length === 0) {
         return alert('目前所有隊員皆標記為「❌ 缺席」，無法進行 AI 排陣！');
       }
 
-      // 分析每個 Leg 的賽制權重與戰略優先級
+      const unsetGenderPlayers = availablePool.filter(p => !p.gender);
+      if (unsetGenderPlayers.length === availablePool.length) {
+        alert('⚠️ 系統尚未設定任何隊員性別！請先到「👑 隊長管理」→「⚤ 隊員性別設定」設定男女，否則男單、女單、男雙、混雙及 1101 將無法排陣。');
+      }
+
       const legMeta = legFormat.map((leg, idx) => {
         const sets = leg.sets || [];
         const ppdSets = sets.filter(s => (s.type || 'ppd') === 'ppd').length;
         const mprSets = sets.filter(s => s.type === 'mpr').length;
         const gameText = sets.map(s => `${s.game} ${s.rule}`).join(' ') + ' ' + leg.name;
         const isDidoOrMo = /DIDO|Double|MO|Master/i.test(gameText);
-        const count = leg.count || 1;
+        const count = Number(leg.count) || 1;
+        const gRule = getLegGenderRule(leg);
 
-        // 策略優先序：1人單打BO3 > 1人DIDO/單局 > 2人雙打BO3 > 2人單局 > 3人/4人隊際
+        // 排陣優先順序：先保證有硬性性別限制的局，再排其餘男優先局
         let priority = 50;
-        if (count === 1 && leg.isBo3) priority = 100 - idx;
-        else if (count === 1) priority = 85 - idx;
-        else if (count === 2 && leg.isBo3) priority = 70 - idx;
-        else if (count === 2) priority = 55 - idx;
-        else priority = 30 - idx;
+        if (gRule.code === 'WOMEN_ONLY') priority = 120 - idx * 0.1;
+        else if (gRule.code === 'MEN_ONLY' && count === 1) priority = 115 - idx * 0.1;
+        else if (gRule.code === 'MIXED') priority = 105 - idx * 0.1;
+        else if (gRule.code === 'MEN_ONLY') priority = 98 - idx * 0.1;
+        else if (gRule.code === 'ANY_PREFER_MEN' && count === 1 && leg.isBo3) priority = 88 - idx * 0.1;
+        else if (gRule.code === 'ANY_PREFER_MEN' && count === 1) priority = 82 - idx * 0.1;
+        else if (gRule.code === 'ANY_PREFER_MEN' && count === 2) priority = 72 - idx * 0.1;
+        else if (gRule.code === 'ANY_PREFER_MEN') priority = 62 - idx * 0.1;
+        else if (gRule.code === 'MIN_ONE_FEMALE') priority = 52 - idx * 0.1;
 
         let focus = 'balanced';
         if (mprSets > ppdSets) focus = 'cricket';
         else if (ppdSets > mprSets && mprSets === 0) focus = '01';
         else if (leg.isBo3) focus = 'bo3';
 
-        return { leg, idx, count, ppdSets, mprSets, isDidoOrMo, focus, priority };
+        return { leg, idx, count, ppdSets, mprSets, isDidoOrMo, focus, priority, gRule };
       });
 
       const orderedLegs = [...legMeta].sort((a, b) => b.priority - a.priority);
@@ -1108,73 +1244,115 @@
 
       const suggestedLineup = Array.from({ length: legFormat.length }, () => []);
       const legFitScores = [];
+      const genderShortages = [];
+      const femaleFallbackLegs = [];
 
-      // 逐 Leg 進行最優化指派
-      orderedLegs.forEach(meta => {
+      // 輔助函式：依單一席位的性別需求挑選最優隊員
+      function pickPlayerForSlot(meta, slotIdx, slotReq, pickedInThisLeg) {
         const { idx, count, isDidoOrMo, focus } = meta;
+        let bestPlayer = null;
+        let bestScore = -Infinity;
+        let bestBaseSkill = 0;
+
+        availablePool.forEach(p => {
+          if (pickedInThisLeg.has(p.uid)) return;
+
+          // 硬性性別過濾
+          if (slotReq === 'M_STRICT' && p.gender !== 'M') return;
+          if (slotReq === 'F_STRICT' && p.gender !== 'F') return;
+
+          // 1. 技戰術適配基礎分 (0~100)
+          let skillScore = 0;
+          if (focus === '01') {
+            skillScore = 0.45 * p.dim01 + 0.25 * p.ratingNorm + (isDidoOrMo ? 0.20 * p.dimClutch : 0.15 * p.dimClutch) + 0.15 * p.dimForm;
+          } else if (focus === 'cricket') {
+            skillScore = 0.52 * p.dimCricket + 0.23 * p.ratingNorm + 0.15 * p.dimForm + 0.10 * p.dimClutch;
+          } else if (focus === 'bo3') {
+            skillScore = 0.30 * p.dim01 + 0.30 * p.dimCricket + 0.20 * p.ratingNorm + 0.12 * p.dimClutch + 0.08 * p.dimForm;
+          } else {
+            skillScore = 0.38 * p.dim01 + 0.22 * p.dimCricket + 0.25 * p.ratingNorm + 0.15 * p.dimForm;
+          }
+
+          // 2. 出席優先度（確保已確認出席 > 遲到中後段 > 未簽到）
+          let attBonus = 0;
+          if (p.status === 'attending') {
+            attBonus = 100;
+          } else if (p.status === 'late') {
+            attBonus = idx <= 2 ? -60 : (idx <= 5 ? 30 : 80);
+          } else if (p.status === 'unmarked') {
+            attBonus = -150;
+          }
+
+          // 3. 性別偏好（「其餘無所謂，但以男為主，如非人不夠」）
+          let genderBonus = 0;
+          if (slotReq === 'PREFER_M') {
+            if (p.gender === 'M') genderBonus = 80;
+            else if (p.gender === 'F') genderBonus = 0;
+            else genderBonus = -35;
+          }
+
+          // 4. 出賽次數輪換負荷平衡
+          const fatiguePenalty = appearances[p.uid] * (count === 1 ? 10 : 8);
+
+          // 5. 單打技術權重加成
+          const skillWeighted = skillScore * (count === 1 ? 0.72 : 0.60);
+
+          const totalUtility = skillWeighted + attBonus + genderBonus - fatiguePenalty;
+          if (totalUtility > bestScore) {
+            bestScore = totalUtility;
+            bestPlayer = p;
+            bestBaseSkill = skillScore;
+          }
+        });
+
+        if (bestPlayer) {
+          pickedInThisLeg.add(bestPlayer.uid);
+          suggestedLineup[idx][slotIdx] = bestPlayer.uid;
+          appearances[bestPlayer.uid] += 1;
+          legFitScores.push({
+            legIdx: idx,
+            player: bestPlayer,
+            skillScore: Math.round(bestBaseSkill)
+          });
+          if (slotReq === 'PREFER_M' && bestPlayer.gender === 'F') {
+            femaleFallbackLegs.push(`${meta.leg.name}（${bestPlayer.name}）`);
+          }
+        } else {
+          suggestedLineup[idx][slotIdx] = '';
+          const reqLabel = slotReq === 'M_STRICT' ? '男隊員' : (slotReq === 'F_STRICT' ? '女隊員' : '隊員');
+          genderShortages.push(`<b>${escapeHtml(meta.leg.name)}</b> 第 ${slotIdx + 1} 席缺乏合資格${reqLabel}`);
+        }
+      }
+
+      // 逐 Leg 指派
+      orderedLegs.forEach(meta => {
+        const { count, gRule } = meta;
         const pickedInThisLeg = new Set();
 
-        for (let slot = 0; slot < count; slot++) {
-          let bestPlayer = null;
-          let bestScore = -Infinity;
-          let bestBaseSkill = 0;
-
-          availablePool.forEach(p => {
-            if (pickedInThisLeg.has(p.uid)) return;
-
-            // 1. 技戰術適配基礎分 (0~100)
-            let skillScore = 0;
-            if (focus === '01') {
-              skillScore = 0.45 * p.dim01 + 0.25 * p.ratingNorm + (isDidoOrMo ? 0.20 * p.dimClutch : 0.15 * p.dimClutch) + 0.15 * p.dimForm;
-            } else if (focus === 'cricket') {
-              skillScore = 0.52 * p.dimCricket + 0.23 * p.ratingNorm + 0.15 * p.dimForm + 0.10 * p.dimClutch;
-            } else if (focus === 'bo3') {
-              skillScore = 0.30 * p.dim01 + 0.30 * p.dimCricket + 0.20 * p.ratingNorm + 0.12 * p.dimClutch + 0.08 * p.dimForm;
-            } else {
-              skillScore = 0.38 * p.dim01 + 0.22 * p.dimCricket + 0.25 * p.ratingNorm + 0.15 * p.dimForm;
+        if (gRule.code === 'MIN_ONE_FEMALE') {
+          // 1101 四人賽：先鎖定最後一格為「必須女隊員 (F_STRICT)」，其餘位置以男為主 (PREFER_M)
+          const fSlot = count - 1;
+          pickPlayerForSlot(meta, fSlot, 'F_STRICT', pickedInThisLeg);
+          for (let slot = 0; slot < count; slot++) {
+            if (slot === fSlot) continue;
+            pickPlayerForSlot(meta, slot, 'PREFER_M', pickedInThisLeg);
+          }
+        } else {
+          for (let slot = 0; slot < count; slot++) {
+            let slotReq = 'PREFER_M';
+            if (gRule.code === 'MEN_ONLY') slotReq = 'M_STRICT';
+            else if (gRule.code === 'WOMEN_ONLY') slotReq = 'F_STRICT';
+            else if (gRule.code === 'MIXED') {
+              if (slot === 0) slotReq = 'M_STRICT';
+              else if (slot === 1) slotReq = 'F_STRICT';
+              else slotReq = 'PREFER_M';
             }
-
-            // 2. 出席時間與風險修正
-            let attBonus = 0;
-            if (p.status === 'attending') {
-              attBonus = 28;
-            } else if (p.status === 'late') {
-              // 遲到隊員：前 3 局扣分較重（避免未到場），後段 Leg 6+ 扣分極輕
-              attBonus = idx <= 2 ? -35 : (idx <= 5 ? -10 : 6);
-            } else if (p.status === 'unmarked') {
-              attBonus = -45;
-            }
-
-            // 3. 出賽次數輪換與體能負荷平衡
-            const fatiguePenalty = appearances[p.uid] * (count === 1 ? 17 : 13);
-
-            // 4. 單打局加權（單打無隊友兜底，強化高分/高抗壓選手優勢）
-            const singlesBoost = count === 1 ? (skillScore * 0.15) : 0;
-
-            const totalUtility = skillScore + attBonus + singlesBoost - fatiguePenalty;
-            if (totalUtility > bestScore) {
-              bestScore = totalUtility;
-              bestPlayer = p;
-              bestBaseSkill = skillScore;
-            }
-          });
-
-          if (bestPlayer) {
-            pickedInThisLeg.add(bestPlayer.uid);
-            suggestedLineup[idx][slot] = bestPlayer.uid;
-            appearances[bestPlayer.uid] += 1;
-            legFitScores.push({
-              legIdx: idx,
-              player: bestPlayer,
-              skillScore: Math.round(bestBaseSkill)
-            });
-          } else {
-            suggestedLineup[idx][slot] = '';
+            pickPlayerForSlot(meta, slot, slotReq, pickedInThisLeg);
           }
         }
       });
 
-      // 將 AI 排陣結果寫入畫面上的下拉選單
+      // 寫入下拉選單並即時觸發每局性別檢查
       document.querySelectorAll('.lineup-select').forEach(sel => {
         const legIdx = parseInt(sel.dataset.leg, 10);
         const slotIdx = parseInt(sel.dataset.slot, 10);
@@ -1183,15 +1361,15 @@
         sel.classList.add('ring-1', 'ring-indigo-500/70');
         setTimeout(() => sel.classList.remove('ring-1', 'ring-indigo-500/70'), 1800);
       });
+      legFormat.forEach((_, idx) => validateLegGenderUI(idx));
 
-      // 計算排陣三維評分與綜合分數
-      const totalSlots = legFormat.reduce((sum, l) => sum + (l.count || 1), 0);
+      // 計算三維評分與綜合分數
+      const totalSlots = legFormat.reduce((sum, l) => sum + (Number(l.count) || 1), 0);
       const filledEntries = legFitScores;
       const avgSkillFit = filledEntries.length > 0
         ? Math.round(filledEntries.reduce((s, e) => s + e.skillScore, 0) / filledEntries.length)
         : 0;
 
-      // 出席保障度 (attending=100%, late=70%, unmarked=35%, empty=0%)
       let attPoints = 0;
       filledEntries.forEach(e => {
         if (e.player.status === 'attending') attPoints += 100;
@@ -1200,14 +1378,13 @@
       });
       const attendanceScore = totalSlots > 0 ? Math.round(attPoints / totalSlots) : 0;
 
-      // 輪換均衡度
       const attendingPlayedCount = attendingPlayers.filter(p => appearances[p.uid] > 0).length;
       const attendingCoverage = attendingPlayers.length > 0 ? (attendingPlayedCount / attendingPlayers.length) : 1;
       const maxLoad = Math.max(0, ...Object.values(appearances));
       const overloadPenalty = Math.max(0, (maxLoad - 4) * 8);
       const balanceScore = Math.min(100, Math.max(30, Math.round(attendingCoverage * 88 + 12 - overloadPenalty)));
 
-      const overallScore = Math.min(99, Math.max(25, Math.round(avgSkillFit * 0.42 + attendanceScore * 0.33 + balanceScore * 0.25)));
+      const overallScore = Math.min(99, Math.max(20, Math.round(avgSkillFit * 0.42 + attendanceScore * 0.33 + balanceScore * 0.25)));
 
       let gradeText = 'C 級・應急陣容';
       let gradeCls = 'bg-rose-900 text-rose-200 border-rose-600';
@@ -1222,7 +1399,6 @@
         gradeCls = 'bg-indigo-800 text-indigo-100 border-indigo-500';
       }
 
-      // 生成「排陣理由」、「優勢 (利)」、「風險與注意 (弊)」
       const reasons = [];
       const pros = [];
       const cons = [];
@@ -1231,33 +1407,28 @@
         .map(uid => players.find(p => p.uid === uid)?.name)
         .filter(Boolean);
 
-      // 理由 1：單打核心
+      reasons.push(`已嚴格套用聯賽性別規則：<b>男單／男雙全男、女單全女、混雙一男一女、1101 最少一女</b>，其餘賽事優先以男隊員為主。`);
+
       const singleLegs = legMeta.filter(m => m.count === 1);
       if (singleLegs.length > 0) {
-        const leg1Names = findNames(singleLegs[0].idx);
         const leg1P = players.find(p => p.uid === suggestedLineup[singleLegs[0].idx]?.[0]);
         if (leg1P) {
-          reasons.push(`<b>${escapeHtml(singleLegs[0].leg.name)}</b> 派上 <b>${escapeHtml(leg1P.name)}</b>（POL27 Rt.${leg1P.rating.toFixed(1)}），搶佔開局領先士氣與 BO3 全能優勢。`);
+          reasons.push(`<b>${escapeHtml(singleLegs[0].leg.name)}</b> 派上 <b>${escapeHtml(leg1P.name)}</b>（POL27 Rt.${leg1P.rating.toFixed(1)}），搶佔開局領先士氣。`);
         }
       }
 
-      // 理由 2：01 與 Cricket 專才匹配
       const cricketLeg = legMeta.find(m => m.focus === 'cricket');
       if (cricketLeg) {
         const cNames = findNames(cricketLeg.idx);
         if (cNames.length > 0) {
-          reasons.push(`<b>${escapeHtml(cricketLeg.leg.name)}</b> 優先鎖定 MPR 控靶能力較佳的 <b>${cNames.map(escapeHtml).join('、')}</b> 出戰。`);
-        }
-      }
-      const didoLeg = legMeta.find(m => m.isDidoOrMo && m.count === 1 && m.idx !== singleLegs[0]?.idx);
-      if (didoLeg) {
-        const dNames = findNames(didoLeg.idx);
-        if (dNames.length > 0) {
-          reasons.push(`<b>${escapeHtml(didoLeg.leg.name)}</b> 著重結鏢抗壓與 01 爆發力，委派 <b>${dNames.map(escapeHtml).join('、')}</b> 擔綱。`);
+          reasons.push(`<b>${escapeHtml(cricketLeg.leg.name)}</b> 鎖定 MPR 控靶較穩的 <b>${cNames.map(escapeHtml).join('、')}</b> 出戰。`);
         }
       }
 
-      // 理由 3：輪換與遲到安排
+      if (femaleFallbackLegs.length > 0) {
+        reasons.push(`因可出賽男隊員不足，已自動由女隊員補位：<b>${femaleFallbackLegs.map(escapeHtml).join('、')}</b>。`);
+      }
+
       const lateUsed = latePlayers.filter(p => appearances[p.uid] > 0);
       if (lateUsed.length > 0) {
         const lateLegsDesc = lateUsed.map(p => {
@@ -1265,65 +1436,53 @@
           return `${escapeHtml(p.name)}(${legs.join('/')})`;
         }).join('、');
         reasons.push(`將「⏰ 遲到」隊員 ${lateLegsDesc} 集中安排於中後段局數，確保趕得及熱身出賽。`);
-      } else {
-        reasons.push(`全部 ${totalSlots} 個出賽席位均已按「出席優先 + 體能輪換」分配，避免主力過度疲勞。`);
       }
 
-      // 優勢 (Pros)
+      // Pros
       const attSlotsCount = filledEntries.filter(e => e.player.status === 'attending').length;
-      if (attSlotsCount === totalSlots && totalSlots > 0) {
-        pros.push(`<b>100% 出席保障</b>：所有出賽席位皆由「✅ 已確認出席」隊員出戰，無臨場缺人風險。`);
+      if (attSlotsCount === totalSlots && totalSlots > 0 && genderShortages.length === 0) {
+        pros.push(`<b>100% 出席及規則達標</b>：全部席位均由已確認出席且符合性別規則的隊員出戰。`);
       } else if (attendanceScore >= 75) {
-        pros.push(`<b>出席穩定度高</b>（${attendanceScore}%）：絕大部分局數由已確認出席隊員坐鎮。`);
+        pros.push(`<b>出席穩定度高</b>（${attendanceScore}%）：主力席位皆由已確認出席隊員坐鎮。`);
       }
-
       if (attendingPlayers.length > 0 && attendingPlayedCount === attendingPlayers.length) {
-        pros.push(`<b>全員皆有實戰機會</b>：已簽到出席的 ${attendingPlayers.length} 位隊員全部獲得出賽安排，有助維持團隊士氣。`);
+        pros.push(`<b>全員皆有實戰機會</b>：已簽到出席的 ${attendingPlayers.length} 位隊員全部獲得出賽安排。`);
       }
-
-      const hotPlayers = filledEntries.filter(e => e.player.recentFormRate >= 70).map(e => e.player.name);
-      const uniqueHot = [...new Set(hotPlayers)];
-      if (uniqueHot.length > 0) {
-        pros.push(`<b>火熱手感加持</b>：近期勝率高企的 <b>${uniqueHot.map(escapeHtml).join('、')}</b> 已被編入主力戰線。`);
+      const hotPlayers = [...new Set(filledEntries.filter(e => e.player.recentFormRate >= 70).map(e => e.player.name))];
+      if (hotPlayers.length > 0) {
+        pros.push(`<b>火熱手感加持</b>：近期勝率高企的 <b>${hotPlayers.map(escapeHtml).join('、')}</b> 已被編入主力戰線。`);
       }
-
       if (avgSkillFit >= 72) {
         pros.push(`<b>專長高度契合</b>（適配分 ${avgSkillFit}）：01 與 Cricket 局各司其職，整體取分期望值高。`);
       }
-      if (pros.length === 0) {
-        pros.push(`在現有人手條件下已最大化保留單打與雙打戰力，並兼顧輪換平衡。`);
-      }
 
-      // 劣勢 / 風險 (Cons)
+      // Cons
+      if (unsetGenderPlayers.length > 0) {
+        cons.push(`<b>有隊員未設定性別</b>（${unsetGenderPlayers.map(p => escapeHtml(p.name)).join('、')}）：請隊長到「👑 隊長管理」設定男女，否則無法參與嚴格性別局排陣。`);
+      }
+      if (genderShortages.length > 0) {
+        genderShortages.forEach(msg => cons.push(`<b>性別人數不足</b>：${msg}。`));
+      }
       const unmarkedUsed = unmarkedPlayers.filter(p => appearances[p.uid] > 0);
       if (unmarkedUsed.length > 0) {
-        cons.push(`<b>包含未簽到隊員</b>：出席人數不足，系統補入了「未簽到」的 <b>${unmarkedUsed.map(p => escapeHtml(p.name)).join('、')}</b>，請隊長賽前私訊確認能否出席。`);
-      }
-      const emptySlotsCount = totalSlots - filledEntries.length;
-      if (emptySlotsCount > 0) {
-        cons.push(`<b>尚餘 ${emptySlotsCount} 個空缺席位</b>：可出賽人數少於多人賽所需名額（如 3/4 人賽），請催促隊員盡快簽到。`);
+        cons.push(`<b>包含未簽到隊員</b>：出席人數不足，系統補入了「未簽到」的 <b>${unmarkedUsed.map(p => escapeHtml(p.name)).join('、')}</b>，請賽前確認能否出席。`);
       }
       if (lateUsed.length > 0) {
         const earlyLate = lateUsed.filter(p => suggestedLineup.slice(0, 3).some(arr => arr.includes(p.uid)));
         if (earlyLate.length > 0) {
-          cons.push(`<b>早段遲到風險</b>：「⏰ 遲到」的 ${earlyLate.map(p => escapeHtml(p.name)).join('、')} 被排入前 3 局，開賽時務必留意到達時間。`);
+          cons.push(`<b>早段遲到風險</b>：「⏰ 遲到」的 ${earlyLate.map(p => escapeHtml(p.name)).join('、')} 被排入前 3 局，請留意到達時間。`);
         } else {
-          cons.push(`<b>遲到調度變數</b>：有遲到隊員在中後段上陣，若賽事進度偏快需準備後備替補。`);
+          cons.push(`<b>遲到調度變數</b>：有遲到隊員在中後段上陣，若賽程進度偏快需準備後備人選。`);
         }
       }
       const overloaded = players.filter(p => appearances[p.uid] >= 5);
       if (overloaded.length > 0) {
-        cons.push(`<b>體能負荷偏高</b>：<b>${overloaded.map(p => `${escapeHtml(p.name)}(${appearances[p.uid]}局)`).join('、')}</b> 出賽場次較多，需留意後段專注力下降。`);
-      }
-      const hasGenderSpecific = legFormat.some(l => /女單|男單|混合/.test(l.name + (l.category || '')));
-      if (hasGenderSpecific) {
-        cons.push(`<b>性別資格提醒</b>：系統未儲存隊員性別欄位，請隊長核對「男單 / 女單 / 混合雙打」人選是否符合聯賽規定。`);
+        cons.push(`<b>體能負荷偏高</b>：<b>${overloaded.map(p => `${escapeHtml(p.name)}(${appearances[p.uid]}局)`).join('、')}</b> 出賽場次較多，需留意後段專注力。`);
       }
       if (cons.length === 0) {
-        cons.push(`暫無明顯結構性短板，建議賽前按當晚臨場練鏢手感作最後微調即可。`);
+        cons.push(`全部性別規則與出席要求均已滿足，賽前按練鏢手感微調即可。`);
       }
 
-      // 渲染 AI 報告面板
       document.getElementById('aiLineupScoreNum').innerText = overallScore;
       const gradeBadge = document.getElementById('aiLineupGradeBadge');
       gradeBadge.innerText = gradeText;
@@ -1384,6 +1543,15 @@
         const slotIdx = parseInt(sel.dataset.slot, 10);
         lineup[legIdx][slotIdx] = sel.value || '';
       });
+
+      const allWarnings = [];
+      for (let i = 0; i < legCount; i++) {
+        allWarnings.push(...validateLegGender(i, lineup[i]));
+      }
+      if (allWarnings.length > 0) {
+        const proceed = confirm(`偵測到以下性別規則提示：\n\n${allWarnings.join('\n')}\n\n確定仍要儲存此排陣嗎？`);
+        if (!proceed) return;
+      }
 
       const res = await apiRequest('POST', {
         action: 'saveLineup',
@@ -1461,32 +1629,94 @@
     }
 
     /* ========================================================
-       【隊長管理後台】
+       【隊長管理後台（含隊員性別設定）】
        ======================================================== */
     async function loadAdminData() {
       const pendingList = document.getElementById('pendingUsersList');
+      const genderList = document.getElementById('activeUsersGenderList');
+      const missingBadge = document.getElementById('genderMissingCountBadge');
+
       pendingList.innerHTML = '<p class="text-slate-400">載入名單中...</p>';
+      genderList.innerHTML = '<p class="text-slate-400">載入隊員資料中...</p>';
+
       const res = await apiRequest('GET', { action: 'getUsers' });
       if (!res || !res.success) {
         pendingList.innerHTML = '<p class="text-rose-400">無法載入會員名單</p>';
+        genderList.innerHTML = '<p class="text-rose-400">無法載入會員名單</p>';
         return;
       }
-      const pending = (res.users || []).filter(u => u.status !== 'active');
+
+      const users = res.users || [];
+      const activeUsers = users.filter(u => u.status === 'active');
+      const pending = users.filter(u => u.status !== 'active');
+
+      const missingCount = activeUsers.filter(u => !normalizeGender(u.gender)).length;
+      if (missingBadge) {
+        if (missingCount > 0) {
+          missingBadge.innerText = `尚餘 ${missingCount} 人未設定`;
+          missingBadge.className = 'text-[10px] px-2 py-0.5 rounded-full font-bold bg-amber-950 text-amber-300 border border-amber-700';
+        } else {
+          missingBadge.innerText = `已全部設定 (${activeUsers.length}人)`;
+          missingBadge.className = 'text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-950 text-emerald-300 border border-emerald-700';
+        }
+      }
+
+      if (activeUsers.length === 0) {
+        genderList.innerHTML = '<p class="text-slate-500">暫無已啟用隊員</p>';
+      } else {
+        genderList.innerHTML = activeUsers.map(u => {
+          const g = normalizeGender(u.gender);
+          const mCls = g === 'M'
+            ? 'bg-sky-600 text-white border-sky-400 shadow'
+            : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white';
+          const fCls = g === 'F'
+            ? 'bg-pink-600 text-white border-pink-400 shadow'
+            : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white';
+          return `
+            <div class="flex justify-between items-center bg-slate-800/70 px-3 py-2 rounded-xl border ${!g ? 'border-amber-500/60' : 'border-slate-700'}">
+              <div>
+                <div class="font-bold text-white flex items-center">${escapeHtml(u.name)} ${getGenderBadgeHtml(g)}</div>
+                <div class="text-[10px] text-slate-400 font-mono">Rt.${parseFloat(u.rating || 0).toFixed(2)}</div>
+              </div>
+              <div class="flex gap-1.5 shrink-0">
+                <button type="button" onclick="setMemberGender('${u.id}', 'M')" class="px-2.5 py-1 rounded-lg border text-[11px] font-bold transition cursor-pointer ${mCls}">👦 男</button>
+                <button type="button" onclick="setMemberGender('${u.id}', 'F')" class="px-2.5 py-1 rounded-lg border text-[11px] font-bold transition cursor-pointer ${fCls}">👧 女</button>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
       if (pending.length === 0) {
         pendingList.innerHTML = '<p class="text-slate-500">目前沒有待審批的新隊員</p>';
-        return;
-      }
-      pendingList.innerHTML = pending.map(u => `
-        <div class="flex justify-between items-center bg-slate-800/80 p-2.5 rounded-xl border border-slate-700">
-          <div>
-            <div class="font-bold text-white">${escapeHtml(u.name)}</div>
-            <div class="text-[10px] text-slate-400">${escapeHtml(u.email)} ｜ 初始 Rt.${u.rating || 0}</div>
+      } else {
+        pendingList.innerHTML = pending.map(u => `
+          <div class="flex justify-between items-center bg-slate-800/80 p-2.5 rounded-xl border border-slate-700">
+            <div>
+              <div class="font-bold text-white flex items-center">${escapeHtml(u.name)} ${getGenderBadgeHtml(u.gender)}</div>
+              <div class="text-[10px] text-slate-400">${escapeHtml(u.email)} ｜ 初始 Rt.${u.rating || 0}</div>
+            </div>
+            <button onclick="activateUser('${u.id}')" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1.5 rounded-lg text-xs cursor-pointer">
+              ✅ 啟用
+            </button>
           </div>
-          <button onclick="activateUser('${u.id}')" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1.5 rounded-lg text-xs cursor-pointer">
-            ✅ 啟用
-          </button>
-        </div>
-      `).join('');
+        `).join('');
+      }
+    }
+
+    async function setMemberGender(userId, gender) {
+      const res = await apiRequest('POST', { action: 'updateUserGender', userId, gender });
+      if (res && res.success) {
+        matchDetailsCache = {};
+        if (currentUser && String(currentUser.id) === String(userId)) {
+          currentUser.gender = gender;
+          localStorage.setItem('dart_user', JSON.stringify(currentUser));
+        }
+        await loadAdminData();
+        refreshBootstrapData(false);
+      } else {
+        alert(res?.message || res?.error || '更新性別失敗');
+      }
     }
 
     async function activateUser(userId) {
@@ -1606,7 +1836,7 @@
         return `
           <tr class="hover:bg-slate-800/40 transition cursor-pointer" onclick="openRadarModal('${s.id}')">
             <td class="p-3">
-              <div class="font-black text-white text-xs">${escapeHtml(s.name)}</div>
+              <div class="font-black text-white text-xs flex items-center">${escapeHtml(s.name)} ${getGenderBadgeHtml(s.gender)}</div>
               <div class="text-[9px] text-indigo-400 font-semibold flex items-center mt-0.5">${escapeHtml(s.aiRole)}</div>
             </td>
             <td class="p-3 font-mono">
@@ -1679,7 +1909,7 @@
       const player = allStatsData.find(s => String(s.id) === String(userId));
       if (!player) return;
 
-      document.getElementById('radarPlayerName').innerText = player.name;
+      document.getElementById('radarPlayerName').innerHTML = `${escapeHtml(player.name)} ${getGenderBadgeHtml(player.gender)}`;
       document.getElementById('radarPlayerBadge').innerHTML = `
         <span>POL27 Rt. <b class="text-yellow-300 font-mono text-xs">${parseFloat(player.rating).toFixed(2)}</b> [${escapeHtml(player.ratingClass)}]</span>
         <span class="text-rose-400 ml-2">● ${escapeHtml(player.aiRole)}</span>
@@ -1731,8 +1961,10 @@
 
       if (isRegisterMode) {
         const name = document.getElementById('regName').value.trim();
+        const gender = document.querySelector('input[name="regGender"]:checked')?.value || '';
         const rating = document.getElementById('regRating').value.trim();
-        const res = await apiRequest('POST', { action: 'register', email, password, name, rating });
+        if (!name || !gender) return alert('請輸入隊員姓名並選擇性別！');
+        const res = await apiRequest('POST', { action: 'register', email, password, name, gender, rating });
         if (res.success) {
           alert('註冊成功！請等待隊長啟用帳號。');
           toggleAuthMode();
