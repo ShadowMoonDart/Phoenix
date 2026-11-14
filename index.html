@@ -925,19 +925,48 @@
       scoreInput.disabled = !isAdmin;
       document.getElementById('mdAdminStatsActions').classList.toggle('hidden', !isAdmin);
 
-      const statsContainer = document.getElementById('mdLegStatsContainer');
+     const statsContainer = document.getElementById('mdLegStatsContainer');
       statsContainer.innerHTML = legFormat.map((leg, legIdx) => {
         const assigned = captainLineup[legIdx] || [];
-        const legExistingStats = legStats.filter(s => s.legIndex === legIdx);
+        const legExistingStats = legStats.filter(s => Number(s.legIndex) === Number(legIdx));
         const legResult = legExistingStats[0]?.result || 'win';
-        const sets = leg.sets && leg.sets.length > 0 ? leg.sets : [{ setNum: 1, label: '第 1 盤', game: leg.name, type: 'ppd' }];
+        const rawSets = leg.sets && leg.sets.length > 0 ? leg.sets : [{ setNum: 1, label: '第 1 盤', game: leg.name, type: 'ppd' }];
+        const sets = rawSets.map((s, sIdx) => ({
+          ...s,
+          setNum: parseInt(s.setNum, 10) || (sIdx + 1)
+        }));
 
         const setsHtml = sets.map(setObj => {
-          const slots = Array.from({ length: leg.count || 1 });
-          const playerInputs = slots.map((_, slotIdx) => {
-            const existing = legExistingStats.find(s => s.subSet === setObj.setNum && (assigned[slotIdx] ? String(s.userId) === String(assigned[slotIdx]) : true));
+          const setStats = legExistingStats.filter(s => Number(s.subSet || 1) === Number(setObj.setNum));
+          const slotCount = Math.max(Number(leg.count) || 1, setStats.length);
+
+          // 兩階段消耗配對：
+          // 1) 先精準配對「出賽排陣」中的隊員，並從待配對池中移除
+          // 2) 再將剩餘已儲存的賽果數據（例如未先排陣或臨時替補）依序填入空餘欄位
+          const remainingStats = [...setStats];
+          const slotMatched = new Array(slotCount).fill(null);
+
+          for (let i = 0; i < slotCount; i++) {
+            const assignedUid = assigned[i] ? String(assigned[i]) : '';
+            if (assignedUid) {
+              const matchIdx = remainingStats.findIndex(s => String(s.userId) === assignedUid);
+              if (matchIdx !== -1) {
+                slotMatched[i] = remainingStats[matchIdx];
+                remainingStats.splice(matchIdx, 1);
+              }
+            }
+          }
+          for (let i = 0; i < slotCount; i++) {
+            if (!slotMatched[i] && remainingStats.length > 0) {
+              slotMatched[i] = remainingStats.shift();
+            }
+          }
+
+          const playerInputs = Array.from({ length: slotCount }).map((_, slotIdx) => {
+            const existing = slotMatched[slotIdx];
             const defaultUid = existing?.userId || assigned[slotIdx] || '';
-            const defaultVal = existing?.statValue || '';
+            const hasVal = existing && existing.statValue !== '' && existing.statValue !== null && existing.statValue !== undefined;
+            const defaultVal = hasVal ? existing.statValue : '';
 
             if (isAdmin) {
               const userOpts = allActiveUsers.map(u => `<option value="${u.userId}" ${String(defaultUid) === String(u.userId) ? 'selected' : ''}>${escapeHtml(u.name)}</option>`).join('');
@@ -955,7 +984,7 @@
               return `
                 <div class="flex justify-between text-[11px] bg-slate-900/70 px-2.5 py-1.5 rounded-lg border border-slate-800">
                   <span class="text-slate-300">${u ? escapeHtml(u.name) : '未記錄'}</span>
-                  <span class="font-mono text-yellow-400 font-bold">${defaultVal ? `${defaultVal} ${(setObj.type || 'ppd').toUpperCase()}` : '-'}</span>
+                  <span class="font-mono text-yellow-400 font-bold">${hasVal ? `${escapeHtml(defaultVal)} ${(setObj.type || 'ppd').toUpperCase()}` : '-'}</span>
                 </div>
               `;
             }
@@ -978,13 +1007,12 @@
                   <option value="win" ${legResult === 'win' ? 'selected' : ''}>🏆 本局勝 (WIN)</option>
                   <option value="lose" ${legResult === 'lose' ? 'selected' : ''}>💥 本局負 (LOSE)</option>
                 </select>
-              ` : `<span class="text-[10px] font-bold ${legResult === 'win' ? 'text-emerald-400' : 'text-rose-400'}">${legExistingStats.length > 0 ? (legResult === 'win' ? '🏆 勝出' : '💥 落敗') : '未開賽'}</span>`}
+              ` : `<span class="text-[10px] font-bold ${legExistingStats.length > 0 ? (legResult === 'win' ? 'text-emerald-400' : 'text-rose-400') : 'text-slate-400'}">${legExistingStats.length > 0 ? (legResult === 'win' ? '🏆 勝出' : '💥 落敗') : '未開賽'}</span>`}
             </div>
             <div class="space-y-1.5">${setsHtml}</div>
           </div>
         `;
       }).join('');
-    }
 
     /* ========================================================
        【一鍵 AI 建議排陣核心引擎 & 利弊評分報告】
